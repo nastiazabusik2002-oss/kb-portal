@@ -83,10 +83,18 @@
     color:#fff;box-shadow:0 0 18px rgba(178,107,255,.55), 0 0 2px rgba(178,107,255,.8);
   }
 
-  /* ---- layout ---- */
+  /* ---- layout ----
+     згорнутий стан — за замовчуванням (більше місця під текст статті): бокова панель
+     не зникає повністю в 0px, а лишається тонкою прозорою смужкою вздовж краю — і сама
+     ця смужка теж клікабельна для розгортання, не лише кнопка ☰ у шапці */
   .layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 69px);transition:grid-template-columns .2s;}
-  body.nav-collapsed .layout{grid-template-columns:0 1fr;}
-  body.nav-collapsed nav{overflow:hidden;padding:0;border-right:none;}
+  body.nav-collapsed .layout{grid-template-columns:14px 1fr;}
+  body.nav-collapsed nav{
+    overflow:hidden;padding:0;cursor:pointer;background:rgba(178,107,255,.05);
+    border-right:1px solid rgba(178,107,255,.18);transition:background .15s;
+  }
+  body.nav-collapsed nav:hover{background:rgba(178,107,255,.14);}
+  body.nav-collapsed nav > *{display:none;}
   nav{padding:22px 0;background:rgba(255,255,255,.015);border-right:1px solid rgba(255,255,255,.06);}
   #navCollapseBtn{
     background:var(--glass);border:1px solid var(--glass-border);color:var(--text);width:34px;height:34px;
@@ -120,6 +128,16 @@
   .nav-tree-toggle:hover{color:var(--text);background:rgba(255,255,255,.08);}
   .nav-tree-toggle-spacer{flex-shrink:0;width:14px;}
   .nav-tree-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* фрагмент тексту статті під пунктом меню під час пошуку — pointer-events:none,
+     щоб клік по фрагменту все одно відкривав статтю (клікабельний лише сам .nav-item).
+     Навмисно 2 рядки (не 1 з обрізкою в кінці) — інакше при вузькій боковій панелі
+     підсвічене слово (яке в середині фрагмента) саме й обрізалось першим */
+  .nav-search-snippet{
+    margin:-3px 10px 6px;padding-right:14px;font-size:11px;line-height:1.4;color:var(--muted);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    pointer-events:none;
+  }
+  .search-hl{color:#fff;font-weight:700;background:rgba(178,107,255,.35);border-radius:3px;padding:0 2px;}
   .nav-sub .nav-item.active{color:var(--text);}
 
   .admin-add{
@@ -129,7 +147,10 @@
   }
   .admin-add:hover{border-color:var(--cyan);background:rgba(62,232,255,.1);box-shadow:0 0 18px rgba(62,232,255,.2);}
 
-  main{padding:38px 44px 70px;max-width:920px;margin:0 auto;width:100%;}
+  /* коли бокова панель згорнута — звільнене місце реально йде під ширший текст/таблиці/
+     схеми (не просто залишається порожнім полем по краях), тому max-width зростає теж */
+  main{padding:38px 44px 70px;max-width:920px;margin:0 auto;width:100%;transition:max-width .2s;}
+  body.nav-collapsed main{max-width:1400px;}
   .crumb{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);margin-bottom:10px;letter-spacing:.4px;}
   h1.title{font-size:30px;margin:0 0 18px;font-weight:700;letter-spacing:-.5px;color:#fff;}
   .dept-tag{
@@ -150,6 +171,8 @@
   .glow-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
     background:var(--cyan);box-shadow:0 0 8px var(--cyan);margin-right:8px;vertical-align:middle;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .stale-row{cursor:pointer;}
+  .stale-row:hover td{background:rgba(178,107,255,.06);}
   td,th{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top;}
   th{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:500;}
   tr:last-child td{border-bottom:none;}
@@ -257,14 +280,27 @@
   ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:6px;}
   ::-webkit-scrollbar-thumb:hover{background:rgba(178,107,255,.4);}
 
-  /* ---- rich text editor ---- */
-  .rte-toolbar{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;}
+  /* ---- rich text editor ----
+     стандартна горизонтальна панель зверху (як у Google Docs) — чіткий ряд кнопок з
+     підказками при наведенні, а не набір абстрактних іконок збоку. Сама панель навмисно
+     виглядає як "інструмент" (відрізняється від картки статті) — це очікувано й зрозуміло;
+     а от сам текст під нею (.rte нижче) виглядає як сама сторінка. */
+  .rte-toolbar{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;
+    padding:8px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:var(--radius-sm);
+  }
   .rte-btn{
     background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--text);
-    width:32px;height:32px;border-radius:8px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;
+    width:34px;height:34px;border-radius:8px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;
   }
+  .rte-btn.wide{width:auto;padding:0 10px;white-space:nowrap;}
   .rte-btn:hover{border-color:var(--violet);background:rgba(178,107,255,.12);}
-  .rte-sep{width:1px;height:20px;background:var(--glass-border);margin:0 4px;}
+  .rte-select{
+    height:34px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--text);
+    border-radius:8px;padding:0 8px;font-family:'Space Grotesk',sans-serif;font-size:13px;cursor:pointer;
+  }
+  .rte-select:hover{border-color:var(--violet);}
+  .rte-sep{width:1px;height:22px;background:var(--glass-border);margin:0 2px;}
   .rte-inline-form{display:none;gap:8px;margin-top:8px;}
   .rte-inline-form.open{display:flex;}
   .rte-inline-form input{flex:1;}
@@ -282,16 +318,46 @@
     box-shadow:0 0 0 1px rgba(255,255,255,.12) inset;
   }
   .bp-swatch.selected{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.25),0 0 10px currentColor;}
-  #bpCustom{width:34px;height:30px;padding:0;border:1px solid var(--glass-border);border-radius:6px;background:none;cursor:pointer;}  .rte{
-    width:100%;min-height:120px;max-height:340px;overflow-y:auto;background:rgba(255,255,255,.04);
-    border:1px solid var(--glass-border);color:var(--text);padding:12px 14px;border-radius:var(--radius-sm);
-    font-family:'Inter',sans-serif;font-size:13.5px;margin-top:8px;line-height:1.6;
+  #bpCustom{width:34px;height:30px;padding:0;border:1px solid var(--glass-border);border-radius:6px;background:none;cursor:pointer;}
+  .avatar-pick{
+    width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:20px;cursor:pointer;border:2px solid transparent;transition:.15s;
   }
-  .rte:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(178,107,255,.15);}
+  .avatar-pick:hover{transform:scale(1.08);}
+  .avatar-pick.selected{border-color:#fff;box-shadow:0 0 0 2px rgba(178,107,255,.5),0 0 12px rgba(178,107,255,.6);}
+  .profile-avatar{
+    display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;
+    border-radius:50%;font-size:20px;margin-right:10px;vertical-align:middle;
+  }
+  .avatar-mini{
+    display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+    border-radius:50%;font-size:12px;margin-right:6px;vertical-align:middle;flex-shrink:0;
+  }
+  /* поле редагування навмисно виглядає точнісінько як .card на опублікованій сторінці
+     (той самий фон/блюр/рамка/тінь/відступи, ніякого окремого вигляду "текстового поля"),
+     і росте разом з текстом, а не ховається в маленькому віконці зі скролом — щоб під час
+     набору тексту було видно, як стаття реально виглядатиме після збереження */
+  .rte{
+    width:100%;min-height:160px;color:var(--text);
+    padding:22px 24px;margin-top:14px;border-radius:var(--radius);
+    background:var(--glass);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);
+    border:1px solid var(--glass-border);box-shadow:0 8px 32px rgba(0,0,0,.35);
+    font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;
+  }
+  /* навмисно БЕЗ окремого фіолетового обведення при фокусі — картка має виглядати
+     так само, як і після збереження, а не підсвічуватись як звичайне текстове поле */
+  .rte:focus{outline:none;}
   .rte:empty:before{content:attr(data-placeholder);color:var(--muted);}
-  .rte h3{color:#fff;font-size:14.5px;margin:14px 0 6px;font-family:'Space Grotesk',sans-serif;}
+  /* розмір/відступи заголовка й параграфів тут навмисно ідентичні .card h3 —
+     аж до тієї самої світної крапки перед заголовком — щоб те, що бачиш під час
+     редагування, 1-в-1 збігалось з опублікованою сторінкою */
+  .rte h3{color:#fff;font-size:15.5px;margin:18px 0 8px;font-weight:600;letter-spacing:-.2px;font-family:'Space Grotesk',sans-serif;}
+  .rte h3:first-child{margin-top:0;}
+  .rte h3::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 8px var(--cyan);margin-right:9px;}
   .rte a{color:var(--cyan);}
   .rte ul{padding-left:20px;}
+  .rte p{margin:0 0 10px;}
   .rte-img-wrap{
     position:relative;display:inline-block;max-width:100%;margin:10px 0;vertical-align:top;
   }
@@ -319,46 +385,63 @@
   .toc a{display:block;color:#c9c2e0;font-size:13px;text-decoration:none;padding:5px 0;border-left:2px solid transparent;padding-left:10px;transition:.15s;}
   .toc a:hover{color:var(--cyan);border-left-color:var(--cyan);}
 
-  /* ---- canvas board ---- */
-  .canvas-toolbar{
-    display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;
+  /* ---- inline блок-схема просто в тілі статті (замість окремого "Полотна") ----
+     працює в реальному масштабі статті — ширина board = ширина .rte, без жодного
+     масштабування 2200px→вузька вставка, тому текст ніколи не "вилазить" через
+     стиснення: контейнер під час редагування і після публікації МАЄ ОДНАКОВУ ширину. */
+  .inline-scheme{
+    position:relative;display:block;width:100%;margin:16px 0;padding:40px 12px 14px;
+    border:1px dashed var(--glass-border);border-radius:var(--radius-sm);
+    background-color:rgba(255,255,255,.015);
+    background-image:radial-gradient(rgba(255,255,255,.1) 1px, transparent 1px);
+    background-size:20px 20px;
   }
-  .canvas-toolbar button{
-    background:rgba(255,255,255,.05);border:1px solid var(--glass-border);color:var(--text);
-    padding:9px 16px;border-radius:999px;font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:600;
+  .inline-scheme-toolbar{
+    position:absolute;top:8px;left:12px;right:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .inline-scheme-toolbar button{
+    background:rgba(255,255,255,.06);border:1px solid var(--glass-border);color:var(--text);
+    padding:5px 11px;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:600;
     cursor:pointer;
   }
-  .canvas-toolbar button:hover{border-color:var(--violet);box-shadow:0 0 14px rgba(178,107,255,.25);}
-  .canvas-toolbar .save-btn{background:linear-gradient(135deg,var(--violet),var(--violet-glow));border-color:transparent;color:#fff;}
-  .canvas-board{
-    position:relative;width:100%;height:640px;overflow:auto;border-radius:var(--radius);
-    border:1px solid var(--glass-border);
-    background-color:rgba(255,255,255,.02);
-    background-image:radial-gradient(rgba(255,255,255,.14) 1px, transparent 1px);
-    background-size:22px 22px;
-  }
-  .canvas-inner{position:relative;width:2200px;height:1400px;}
+  .inline-scheme-toolbar button:hover{border-color:var(--violet);}
+  .inline-scheme-toolbar button.linking{background:linear-gradient(135deg,var(--cyan),#0891b2);border-color:transparent;color:#0a0510;}
+  .inline-scheme-toolbar .is-del{margin-left:auto;color:var(--red);border-color:rgba(255,92,138,.35);}
+  .inline-scheme-board{position:relative;width:100%;min-height:160px;}
+  .inline-scheme-arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .card .inline-scheme{border-style:solid;} /* у режимі перегляду рамка суцільна, не "чернетковий" пунктир */
+  .card .inline-scheme-toolbar{display:none;} /* панель інструментів лише під час редагування статті */
+  .card .inline-scheme{padding-top:14px;}
+
+  /* display:flex — щоб .cv-clip завжди заповнював ПОВНУ висоту блока (навіть коли
+     реальний текст коротший за встановлений inline min-height), а не лише висоту
+     самого тексту: інакше порожня "зайва" смуга внизу блока не реагувала б на
+     клік/перетягування/подвійний клік (там просто не було б жодного елемента) */
   .cv-block{
-    position:absolute;border-radius:10px;
+    position:absolute;border-radius:10px;height:auto;display:flex;flex-direction:column;
     border:1px solid rgba(178,107,255,.4);background:rgba(178,107,255,.08);backdrop-filter:blur(10px);
     box-shadow:0 6px 20px rgba(0,0,0,.3);
   }
-  /* обгортка для вмісту, що реально обрізається по рамці блока — кнопки 🗑/🔄/🎨
-     навмисно НЕ всередині неї, бо вони стирчать за межі блока (top:-9px тощо) і
-     overflow:hidden на самому .cv-block їх би обрізав */
-  .cv-clip{position:absolute;inset:0;border-radius:inherit;overflow:hidden;}
+  /* .cv-clip росте разом із текстом (flex:1 розтягує його на всю висоту .cv-block,
+     навіть як вище) — саме тому висота блока природно росте разом із текстом і
+     ніколи його не обрізає. Виняток — картинки: у них немає тексту, що "переповнює"
+     рамку, тому їм повертаємо стару поведінку (фіксована висота, обрізка по рамці). */
+  .cv-clip{position:relative;border-radius:inherit;flex:1 1 auto;}
+  /* висота img-блоку задається інлайново з JS (фіксована, як задав ресайз) */
+  .cv-block.cv-img .cv-clip{position:absolute;inset:0;overflow:hidden;flex:none;}
   .cv-block.cv-text{background:rgba(255,255,255,.06);border-color:var(--glass-border);}
   .cv-block.cv-rect{background:rgba(62,232,255,.08);border-color:rgba(62,232,255,.4);}
   .cv-block .cv-drag{
     position:absolute;inset:0;cursor:grab;
   }
   .cv-block .cv-content{
-    position:relative;width:100%;height:100%;padding:10px 12px;color:var(--text);font-size:13px;
-    outline:none;overflow:hidden;pointer-events:none;
+    position:relative;width:100%;min-height:100%;padding:9px 11px;
+    color:var(--text);font-size:13.5px;line-height:1.4;
+    outline:none;pointer-events:none;
   }
   .cv-block.editing .cv-content{pointer-events:auto;cursor:text;}
   .cv-block.editing .cv-drag{pointer-events:none;}
-  .cv-block img{width:100%;height:100%;object-fit:cover;pointer-events:none;}
+  .cv-block img{width:100%;height:100%;object-fit:cover;pointer-events:none;border-radius:inherit;}
   .cv-resize{
     position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;border-radius:50%;
     background:var(--cyan);border:2px solid #0a0510;cursor:nwse-resize;box-shadow:0 0 8px rgba(62,232,255,.7);z-index:5;
@@ -389,16 +472,31 @@
     background:rgba(10,8,18,.92);border:1px solid var(--glass-border);
   }
   .cv-textcolor-popover.open{display:flex;}
+  .cv-fontsize-btn{
+    position:absolute;top:-9px;left:14px;width:20px;height:20px;border-radius:50%;background:rgba(10,8,18,.75);
+    color:#fff;font-size:10.5px;line-height:20px;text-align:center;cursor:pointer;display:none;z-index:6;
+  }
+  .cv-block:hover .cv-fontsize-btn{display:block;}
+  .cv-fontsize-popover{
+    position:absolute;top:-42px;left:14px;display:none;gap:4px;padding:6px;border-radius:10px;z-index:8;
+    background:rgba(10,8,18,.92);border:1px solid var(--glass-border);
+  }
+  .cv-fontsize-popover.open{display:flex;}
+  .cv-fontsize-popover button{
+    width:24px;height:24px;border-radius:6px;border:1px solid var(--glass-border);background:rgba(255,255,255,.06);
+    color:#fff;font-family:'Space Grotesk',sans-serif;cursor:pointer;padding:0;line-height:1;
+  }
+  .cv-fontsize-popover button:hover{border-color:var(--violet);}
   .cv-swatch{width:16px;height:16px;border-radius:50%;cursor:pointer;border:1px solid rgba(255,255,255,.35);flex-shrink:0;}
   .cv-block.link-selected{box-shadow:0 0 0 3px var(--cyan), 0 0 20px rgba(62,232,255,.6) !important;}
-  .canvas-toolbar button.linking{background:linear-gradient(135deg,var(--cyan),#0891b2);border-color:transparent;color:#0a0510;}
 
-  /* ---- вставлена в статтю схема (статичний знімок полотна на момент вставки) ----
+  /* ---- старі схеми, вставлені в статті ДО переходу на inline-конструктор (2026-09-24) ----
+     лишаємо CSS для зворотної сумісності зі статтями, збереженими раніше */
      прозорий фон навмисно — блоки мають "плавати" прямо на фоні статті, без рамки-контейнера;
      розмір змінюється тим самим .rte-resize-handle, що й у звичайних картинок */
-  .rte-img-wrap.cv-embed{width:640px;}
+  .rte-img-wrap.cv-embed{width:760px;}
   .cv-embed-inner{
-    position:relative;display:block;width:100%;aspect-ratio:2200/1400;
+    position:relative;display:block;width:100%;aspect-ratio:2200/1400;container-type:inline-size;
   }
   .cv-embed-arrows{position:absolute;inset:0;width:100%;height:100%;}
 
@@ -409,23 +507,6 @@
   .rte-render ul{padding-left:20px;}
   .rte-render p{margin:0 0 10px;}
   .card .rte-resize-handle{display:none;} /* resize handle only active while composing */
-
-  .embed-canvas-btn{
-    display:inline-flex;align-items:center;gap:7px;background:rgba(178,107,255,.12);
-    border:1px solid rgba(178,107,255,.45);color:var(--violet);padding:7px 14px;border-radius:999px;
-    font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;margin:6px 0;
-  }
-  .embed-canvas-btn:hover{background:rgba(178,107,255,.22);box-shadow:0 0 16px rgba(178,107,255,.3);}
-  .canvas-picker{
-    display:none;margin-top:8px;padding:10px;border-radius:var(--radius-sm);
-    background:rgba(255,255,255,.04);border:1px solid var(--glass-border);max-height:160px;overflow-y:auto;
-  }
-  .canvas-picker.open{display:block;}
-  .canvas-picker .cp-item{
-    padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);
-  }
-  .canvas-picker .cp-item:hover{background:rgba(178,107,255,.12);}
-  .canvas-picker .cp-empty{color:var(--muted);font-size:12.5px;padding:8px 10px;}
 
   .canvas-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:6px;}
   .canvas-card{
@@ -472,12 +553,16 @@
     border-radius:50%;background:rgba(255,255,255,.08);
   }
 
-  /* ---- inline page editor (lives on the article's own page) ---- */
+  /* ---- inline page editor (lives on the article's own page) ----
+     навмисно той самий розмір/відступ, що й у h1.title на опублікованій сторінці —
+     рамка знизу прозора за замовчуванням і проявляється лише при наведенні/фокусі,
+     щоб поле для назви виглядало як сам заголовок, а не як окрема форма */
   .page-title-input{
-    width:100%;background:transparent;border:none;border-bottom:2px solid var(--glass-border);
-    color:#fff;font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.5px;
-    padding:6px 2px 12px;margin-bottom:20px;
+    width:100%;background:transparent;border:none;border-bottom:2px solid transparent;
+    color:#fff;font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.5px;
+    padding:0;margin:0 0 18px;
   }
+  .page-title-input:hover{border-bottom-color:var(--glass-border);}
   .page-title-input:focus{outline:none;border-bottom-color:var(--violet);}
   .page-title-input::placeholder{color:var(--muted);font-weight:600;}
   .page-actions{display:flex;gap:10px;margin-top:20px;align-items:center;}
@@ -495,6 +580,18 @@
     border:1px dashed rgba(62,232,255,.35);border-radius:8px;
   }
   .add-subpage-link:hover{background:rgba(62,232,255,.08);border-color:var(--cyan);}
+
+  /* банер відновлення автозбереженої чернетки (localStorage) при відкритті редактора статті */
+  .draft-banner{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:12px 16px;margin-bottom:18px;border-radius:var(--radius-sm);
+    background:rgba(255,177,0,.08);border:1px solid rgba(255,177,0,.35);color:#ffd27a;font-size:13px;
+  }
+  .draft-banner .btn{padding:6px 14px;font-size:12px;}
+
+  .related-link{padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--cyan);font-size:13.5px;transition:.15s;}
+  .related-link:hover{background:rgba(62,232,255,.08);}
+  .related-pick-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0;}
 
   .btn.active-type{background:linear-gradient(135deg,var(--violet),var(--violet-glow));border-color:transparent;color:#fff;}
   .outcome-btn[data-outcome="no"].active-type{background:linear-gradient(135deg,var(--red),#c2185b);}
@@ -537,7 +634,7 @@
   body.light .rte{background:rgba(30,20,50,.03);}
   body.light .rte h3{color:#1c1428;}
   body.light .toc a{color:#453d5c;}
-  body.light .canvas-board{background-color:rgba(30,20,50,.02);background-image:radial-gradient(rgba(30,20,50,.14) 1px, transparent 1px);}
+  body.light .inline-scheme{background-color:rgba(30,20,50,.015);background-image:radial-gradient(rgba(30,20,50,.1) 1px, transparent 1px);}
   body.light .cv-block.cv-text{background:rgba(30,20,50,.05);}
   body.light .save-toast{background:rgba(255,255,255,.92);}
   body.light ::-webkit-scrollbar-thumb{background:rgba(30,20,50,.14);}
@@ -545,6 +642,18 @@
   body.light .rte-render h3{color:#1c1428;}
   body.light .rte:empty:before{color:var(--muted);}
   body.light .page-title-input{color:#161022;border-bottom-color:rgba(30,20,50,.15);}
+
+  /* друк статті — лишаємо тільки заголовок і сам текст, без сайдбару/тулбарів/кнопок */
+  @media print{
+    header, .layout > nav, .rte-toolbar, .page-actions, .edit-toggle-btn, .admin-only,
+    #quizCard, #suggestCard, #fbCard, .toc{ display:none !important; }
+    body{background:#fff;color:#000;}
+    .layout{display:block;}
+    main{max-width:100%;padding:0;margin:0;}
+    .card{box-shadow:none;border:1px solid #ccc;background:#fff;color:#000;backdrop-filter:none;}
+    h1.title{color:#000;}
+    .crumb{color:#666;}
+  }
 </style>
 </head>
 <body>
@@ -576,14 +685,13 @@
       <div class="nav-item" data-view="tests" id="navTests">🧪 Тести</div>
       <div class="nav-item" data-view="mine" id="navMine">⭐ Моє</div>
       <div class="nav-item admin-only" data-view="suggestions" id="navSuggestions">💬 Пропозиції</div>
+      <div class="nav-item admin-only" data-view="quizResults" id="navQuizResults">📊 Результати тестів</div>
+      <div class="nav-item admin-only" data-view="staleArticles" id="navStaleArticles">🕓 Давно не оновлювались</div>
+      <div class="nav-item admin-only" data-view="users" id="navUsers">👥 Користувачі</div>
     </div>
 
     <div class="nav-group admin-only" id="scenarioNavGroup">
       <div class="nav-heading">Сценарії (адмін)</div>
-    </div>
-
-    <div class="nav-group admin-only" id="canvasNavGroup">
-      <div class="nav-heading">Полотна (адмін)</div>
     </div>
 
     <div class="admin-add admin-only" id="addPageBtn">+ Сторінка</div>
@@ -611,6 +719,24 @@
         <button class="btn" id="gatePwBack">← Назад</button>
         <button class="btn primary" id="gatePwConfirm">Увійти</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="profileOverlay">
+  <div class="modal" style="width:460px">
+    <h3>Особистий кабінет</h3>
+    <div class="hint" style="margin-bottom:16px">Потрібно лише щоб зберігати "Улюблене", результати тестів і аватар саме за вами (це не логін і без пароля — нічого не перевіряється). Пошта — щоб кабінет гарантовано не зіллявся з чужим, навіть якщо хтось введе такий самий нікнейм.</div>
+    <input type="text" id="profNameInput" placeholder="Нікнейм, напр. Настя" style="margin-bottom:10px">
+    <input type="email" id="profEmailInput" placeholder="Робоча пошта, напр. a.ivanenko@ttn.global">
+    <div class="hint" id="profEmailHint" style="margin:8px 0 0;color:var(--red);display:none"></div>
+    <div style="margin-top:16px">
+      <div class="hint" style="margin-bottom:8px">Оберіть аватар</div>
+      <div id="profAvatarGrid" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="profCancel">Скасувати</button>
+      <button class="btn primary" id="profConfirm">Зберегти</button>
     </div>
   </div>
 </div>
@@ -947,9 +1073,11 @@ function render(view){
   if(view === 'assistant'){ renderScenarioPicker(); return; }
   if(view.startsWith('scenario-edit:')){ renderScenarioBuilder(view); return; }
   if(view.startsWith('scenario:')){ renderScenarioRun(view); return; }
-  if(view === 'canvas' || view.startsWith('canvas:')){ renderCanvas(view); return; }
   if(view === 'tests' || view.startsWith('test:')){ renderTestsSection(view); return; }
   if(view === 'suggestions'){ renderSuggestions(); return; }
+  if(view === 'quizResults'){ renderQuizResultsAdmin(); return; }
+  if(view === 'staleArticles'){ renderStaleArticlesAdmin(); return; }
+  if(view === 'users'){ renderUsersAdmin(); return; }
   if(view === 'mine'){ renderMyPage(); return; }
 
   const admin = ADMIN_ARTICLES.find(a=>a.id===view);
@@ -959,24 +1087,35 @@ function render(view){
   main.innerHTML = `
     <div class="crumb">${admin ? articleBreadcrumb(admin) : data.crumb}</div>
     <h1 class="title">${data.title}
+      <button class="edit-toggle-btn" id="printBtn" type="button" title="Друк / PDF">🖨 Друк</button>
       <button class="edit-toggle-btn" id="favToggleBtn" type="button">☆ Читати пізніше</button>
       ${admin ? '<button class="edit-toggle-btn admin-only" id="pageEditBtn">✎ Редагувати</button>' : ''}
     </h1>
-    <div class="dept-tag">${data.tag}</div>
+    ${data.tag && data.tag !== 'Додано адміном' ? `<div class="dept-tag">${data.tag}</div>` : ''}
+    ${admin ? `<div class="hint" style="margin:-14px 0 18px">${admin.updatedAt ? 'Оновлено ' + formatSuggestDate(admin.updatedAt) : 'Дату оновлення ще не позначено — з\'явиться після наступного збереження'}</div>` : ''}
     <div id="tocSlot"></div>
     ${admin ? `<div class="card rte-render">${data.body}</div>` : data.render()}
+    ${admin ? renderRelatedBlock(admin) : ''}
     ${admin && admin.quiz && admin.quiz.length ? renderQuizBlock(admin.quiz) : ''}
+    ${admin ? renderFeedbackBlock(admin) : ''}
     ${admin ? renderSuggestBlock() : ''}
   `;
   buildTOC();
+  hydrateInlineSchemes(main);
   attachFavButton(view);
+  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
   if(admin){
     document.getElementById('pageEditBtn').addEventListener('click', ()=>renderArticleEditPage(admin));
   }
   if(admin && admin.quiz && admin.quiz.length){
-    document.getElementById('quizStartBtn').addEventListener('click', ()=>runQuiz(admin));
+    /* тест відкривається окремим "чистим" екраном (view=test:<id>), а не розгортається
+       прямо тут під статтею — щоб текст статті не підказував відповіді й не муляв очі
+       під час проходження */
+    document.getElementById('quizStartBtn').addEventListener('click', ()=>render('test:'+admin.id));
   }
   if(admin){
+    attachRelatedBlock();
+    attachFeedbackBlock(admin);
     attachSuggestBlock(admin);
   }
 }
@@ -1023,36 +1162,116 @@ async function renderTestsSection(view){
   document.getElementById('quizStartBtn').addEventListener('click', ()=>runQuiz(article));
 }
 
-/* ---------------- ОСОБИСТЕ: легка ідентифікація (не логін — просто ім'я, запам'ятоване в браузері) +
-   "Улюблене" (⭐ читати пізніше) + "Пройдені мною тести" ---------------- */
-function agentKey(name){
-  return 'agent:' + name.trim().toLowerCase().replace(/[^a-zа-яіїєґ0-9]+/gi,'-');
+/* ---------------- ОСОБИСТЕ: легкий кабінет (не логін, без пароля — нікнейм + пошта + аватар
+   у localStorage й у Supabase) + "Улюблене" (⭐ читати пізніше) + "Пройдені мною тести" ----------------
+   Пошта, а не нікнейм, є унікальним ключем — саме вона гарантує, що два агенти з однаковим
+   нікнеймом (тезки) ніколи не поділять один кабінет. */
+const AVATAR_OPTIONS = [
+  {id:'f1', emoji:'👩', color:'#3ee8ff'},
+  {id:'f2', emoji:'👩‍🦰', color:'#ff5c8a'},
+  {id:'f3', emoji:'👩‍🦱', color:'#b26bff'},
+  {id:'f4', emoji:'👩‍🦳', color:'#4dffb4'},
+  {id:'f5', emoji:'👩‍💼', color:'#ffb100'},
+  {id:'m1', emoji:'👨', color:'#b26bff'},
+  {id:'m2', emoji:'👨‍🦰', color:'#3ee8ff'},
+  {id:'m3', emoji:'👨‍🦱', color:'#ff4fd8'},
+  {id:'m4', emoji:'👨‍🦳', color:'#4dffb4'},
+  {id:'m5', emoji:'👨‍💼', color:'#ffb100'},
+];
+function avatarInfo(id){
+  return AVATAR_OPTIONS.find(a=>a.id===id) || AVATAR_OPTIONS[0];
 }
-async function getAgentName(){
-  let name = localStorage.getItem('kbAgentName');
-  if(name) return name;
-  name = await quickPrompt(
-    'Як вас звати?',
-    'Потрібно лише щоб зберігати "Улюблене" й результати тестів саме за вами (це не логін і не перевіряється) — наступного разу введіть те саме ім\'я на цьому чи іншому пристрої, і побачите свій список знову. ⚠️ Якщо у вас є тезка в команді — краще щось унікальне (латиницею й з цифрою/прізвищем), інакше ваші списки зіллються в один.',
-    'напр. Nastya_Z01 або Ivan.Petrenko2'
-  );
-  if(name) localStorage.setItem('kbAgentName', name);
-  return name;
+function renderAvatarGrid(container, selectedId){
+  let selected = selectedId || AVATAR_OPTIONS[0].id;
+  container.innerHTML = AVATAR_OPTIONS.map(a=>
+    `<span class="avatar-pick${a.id===selected?' selected':''}" data-avatar="${a.id}" style="background:${cvHexToRgba(a.color,.25)}">${a.emoji}</span>`
+  ).join('');
+  container.querySelectorAll('.avatar-pick').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      container.querySelectorAll('.avatar-pick').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      selected = el.dataset.avatar;
+    });
+  });
+  return ()=>selected;
 }
-async function loadAgentDoc(name){
+/* existing = {name, email, avatar} для редагування вже наявного профілю, інакше null для нового */
+function openProfileModal(existing){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('profileOverlay');
+    const nameInput = document.getElementById('profNameInput');
+    const emailInput = document.getElementById('profEmailInput');
+    const emailHint = document.getElementById('profEmailHint');
+    const grid = document.getElementById('profAvatarGrid');
+    nameInput.value = existing?.name || '';
+    nameInput.style.borderBottomColor = '';
+    emailInput.value = existing?.email || '';
+    emailInput.style.borderBottomColor = '';
+    emailHint.style.display = 'none';
+    const getSelected = renderAvatarGrid(grid, existing?.avatar);
+    overlay.classList.add('open');
+    nameInput.focus();
+    const confirmBtn = document.getElementById('profConfirm');
+    const cancelBtn = document.getElementById('profCancel');
+    function cleanup(val){
+      overlay.classList.remove('open');
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(val);
+    }
+    function onConfirm(){
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim().toLowerCase();
+      if(!name){ nameInput.style.borderBottomColor = 'var(--red)'; return; }
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        emailHint.textContent = 'Введіть коректну робочу пошту';
+        emailHint.style.display = 'block';
+        emailInput.style.borderBottomColor = 'var(--red)';
+        return;
+      }
+      cleanup({name, email, avatar: getSelected()});
+    }
+    function onCancel(){ cleanup(null); }
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+function agentKey(email){
+  return 'agent:' + email.trim().toLowerCase();
+}
+/* повертає {name,email,avatar} — з localStorage, якщо кабінет уже є, інакше відкриває форму
+   створення й одразу заводить документ у базі */
+async function getAgentProfile(){
+  const email = localStorage.getItem('kbAgentEmail');
+  if(email){
+    return { name: localStorage.getItem('kbAgentName')||'', email, avatar: localStorage.getItem('kbAgentAvatar')||AVATAR_OPTIONS[0].id };
+  }
+  const profile = await openProfileModal(null);
+  if(!profile) return null;
+  localStorage.setItem('kbAgentEmail', profile.email);
+  localStorage.setItem('kbAgentName', profile.name);
+  localStorage.setItem('kbAgentAvatar', profile.avatar);
+  await saveAgentDoc({ email: profile.email, name: profile.name, avatar: profile.avatar, favorites: [], quizResults: [] });
+  return profile;
+}
+async function loadAgentDoc(email){
   try{
-    const res = await window.storage.get(agentKey(name), true);
+    const res = await window.storage.get(agentKey(email), true);
     if(res && res.value) return JSON.parse(res.value);
   }catch(e){}
-  return { name, favorites: [], quizResults: [] };
+  return { email, name:'', avatar: AVATAR_OPTIONS[0].id, favorites: [], quizResults: [] };
 }
 async function saveAgentDoc(doc){
-  try{ await window.storage.set(agentKey(doc.name), JSON.stringify(doc), true); }catch(e){}
+  try{ await window.storage.set(agentKey(doc.email), JSON.stringify(doc), true); }catch(e){}
 }
 async function recordQuizResult(article, score, total){
-  const name = localStorage.getItem('kbAgentName');
-  if(!name) return; // не нав'язуємо ім'я одразу після тесту — це опційна зручність
-  const doc = await loadAgentDoc(name);
+  /* адмін бачить результати тестів у "Результати тестів" — тому, на відміну від "Улюблене",
+     кабінет РЕАЛЬНО потрібен одразу: якщо його ще нема, питаємо зараз (getAgentProfile сама
+     відкриє форму); якщо агент явно скасує — результат просто не зберігається (не блокуємо
+     показ балу на екрані) */
+  const profile = await getAgentProfile();
+  if(!profile) return;
+  const doc = await loadAgentDoc(profile.email);
   doc.quizResults = (doc.quizResults || []).filter(r=>r.articleId!==article.id);
   doc.quizResults.push({ articleId: article.id, articleTitle: article.title, score, total, takenAt: new Date().toISOString() });
   await saveAgentDoc(doc);
@@ -1060,13 +1279,13 @@ async function recordQuizResult(article, score, total){
 async function attachFavButton(articleId){
   const btn = document.getElementById('favToggleBtn');
   if(!btn) return;
-  const name = localStorage.getItem('kbAgentName');
-  const isFav = name ? (await loadAgentDoc(name)).favorites.includes(articleId) : false;
+  const email = localStorage.getItem('kbAgentEmail');
+  const isFav = email ? (await loadAgentDoc(email)).favorites.includes(articleId) : false;
   btn.textContent = isFav ? '★ У обраному' : '☆ Читати пізніше';
   btn.addEventListener('click', async ()=>{
-    const agentName = await getAgentName();
-    if(!agentName) return;
-    const doc = await loadAgentDoc(agentName);
+    const profile = await getAgentProfile();
+    if(!profile) return;
+    const doc = await loadAgentDoc(profile.email);
     const idx = doc.favorites.indexOf(articleId);
     if(idx>=0) doc.favorites.splice(idx,1); else doc.favorites.push(articleId);
     await saveAgentDoc(doc);
@@ -1075,28 +1294,34 @@ async function attachFavButton(articleId){
 }
 async function renderMyPage(){
   const main = document.getElementById('main');
-  const name = localStorage.getItem('kbAgentName');
-  if(!name){
+  const email = localStorage.getItem('kbAgentEmail');
+  if(!email){
     main.innerHTML = `
       <div class="crumb">Моє</div>
-      <h1 class="title">Улюблене та мої тести</h1>
-      <p style="color:var(--muted)">Ще не знаємо, як вас звати — назвіться, щоб побачити свій список.</p>
-      <button class="btn primary" id="mineIntroBtn" type="button">Почати</button>
+      <h1 class="title">Особистий кабінет</h1>
+      <p style="color:var(--muted)">Ще немає кабінету — створіть, щоб бачити своє обране й тести.</p>
+      <button class="btn primary" id="mineIntroBtn" type="button">Створити кабінет</button>
     `;
     document.getElementById('mineIntroBtn').addEventListener('click', async ()=>{
-      const n = await getAgentName();
-      if(n) renderMyPage();
+      const p = await getAgentProfile();
+      if(p) renderMyPage();
     });
     return;
   }
   if(!ADMIN_ARTICLES.length) await loadAdminArticles();
-  const doc = await loadAgentDoc(name);
+  const doc = await loadAgentDoc(email);
   const favArticles = doc.favorites.map(id=>ADMIN_ARTICLES.find(a=>a.id===id)).filter(Boolean);
   const quizResults = (doc.quizResults || []).slice().sort((a,b)=>(b.takenAt||'').localeCompare(a.takenAt||''));
+  const avatar = avatarInfo(doc.avatar);
 
   main.innerHTML = `
     <div class="crumb">Моє</div>
-    <h1 class="title">Привіт, ${escapeHtml(name)} <button class="edit-toggle-btn" id="mineChangeNameBtn">Змінити ім'я</button></h1>
+    <h1 class="title">
+      <span class="profile-avatar" style="background:${cvHexToRgba(avatar.color,.25)}">${avatar.emoji}</span>
+      Привіт, ${escapeHtml(doc.name||'')}
+      <button class="edit-toggle-btn" id="mineChangeProfileBtn">Змінити профіль</button>
+    </h1>
+    <div class="hint" style="margin:-14px 0 18px">${escapeHtml(email)}</div>
     <div class="card">
       <h3>⭐ Читати пізніше</h3>
       ${favArticles.length ? '<div id="mineFavList"></div>' : '<p style="color:var(--muted)">Поки що порожньо — натисніть ☆ на будь-якій статті.</p>'}
@@ -1137,9 +1362,26 @@ async function renderMyPage(){
     });
   }
 
-  document.getElementById('mineChangeNameBtn').addEventListener('click', async ()=>{
-    const n = await quickPrompt('Змінити ім\'я', 'Список "Улюблене" й тести привʼязані саме до імені — якщо ввести інше, побачите список іншої людини (або порожній, якщо під новим іменем ще нічого не збережено). Якщо у вас є тезка в команді — зробіть імʼя унікальним (латиницею й з цифрою/прізвищем).', name);
-    if(n){ localStorage.setItem('kbAgentName', n); renderMyPage(); }
+  document.getElementById('mineChangeProfileBtn').addEventListener('click', async ()=>{
+    const updated = await openProfileModal({name: doc.name, email, avatar: doc.avatar});
+    if(!updated) return;
+    localStorage.setItem('kbAgentEmail', updated.email);
+    localStorage.setItem('kbAgentName', updated.name);
+    localStorage.setItem('kbAgentAvatar', updated.avatar);
+    if(updated.email === email){
+      doc.name = updated.name;
+      doc.avatar = updated.avatar;
+      await saveAgentDoc(doc);
+    } else {
+      /* пошту змінили — це фактично перемикання на інший кабінет (можливо, вже наявний
+         з іншого пристрою); підвантажуємо/оновлюємо документ саме під новою поштою */
+      const otherDoc = await loadAgentDoc(updated.email);
+      otherDoc.email = updated.email;
+      otherDoc.name = updated.name;
+      otherDoc.avatar = updated.avatar;
+      await saveAgentDoc(otherDoc);
+    }
+    renderMyPage();
   });
 }
 
@@ -1148,6 +1390,33 @@ function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str || '';
   return div.innerHTML;
+}
+/* прибирає html-теги з тіла статті, щоб пошук по слову бачив саме текст, а не розмітку */
+function stripHtml(html){
+  const div = document.createElement('div');
+  div.innerHTML = html || '';
+  return div.textContent || '';
+}
+/* коротка "виписка" тексту навколо знайденого слова (з підсвіченим збігом) — показується
+   в пошуку під назвою статті, коли слово знайдене лише в тексті, а не в заголовку: інакше
+   незрозуміло, чому саме ця стаття серед кількох знайшлась за словом */
+function makeSearchSnippet(article, q){
+  const plain = stripHtml(article.body).replace(/\s+/g,' ').trim();
+  const lower = plain.toLowerCase();
+  const idx = lower.indexOf(q);
+  if(idx === -1) return '';
+  const radius = 30;
+  const start = Math.max(0, idx - radius);
+  const end = Math.min(plain.length, idx + q.length + radius);
+  let snippet = plain.slice(start, end);
+  if(start > 0) snippet = '…' + snippet;
+  if(end < plain.length) snippet = snippet + '…';
+  const localIdx = snippet.toLowerCase().indexOf(q);
+  if(localIdx === -1) return escapeHtml(snippet);
+  const before = escapeHtml(snippet.slice(0, localIdx));
+  const match = escapeHtml(snippet.slice(localIdx, localIdx + q.length));
+  const after = escapeHtml(snippet.slice(localIdx + q.length));
+  return `${before}<mark class="search-hl">${match}</mark>${after}`;
 }
 function formatSuggestDate(iso){
   try{ return new Date(iso).toLocaleString('uk-UA', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}); }
@@ -1237,6 +1506,200 @@ async function renderSuggestions(){
   }));
 }
 
+/* ---------------- РЕЗУЛЬТАТИ ТЕСТІВ (адмін) — зведено по всій команді: нікнейм + результат ---------------- */
+async function renderQuizResultsAdmin(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="crumb">Інструменти · Адмін</div>
+    <h1 class="title">Результати тестів</h1>
+    <div class="dept-tag">Хто з агентів проходив тести й з яким результатом — по всій команді. Дані беруться з тих самих нікнеймів, що агенти вводять у розділі «Моє».</div>
+    <div id="quizResultsWrap"><p style="color:var(--muted)">Завантаження…</p></div>
+  `;
+  let rows = [];
+  try{
+    const res = await window.storage.list('agent:');
+    if(res && res.keys && res.keys.length){
+      for(const k of res.keys){
+        try{
+          const item = await window.storage.get(k, true);
+          if(item && item.value){
+            const doc = JSON.parse(item.value);
+            (doc.quizResults || []).forEach(r=>{
+              rows.push({
+                agent: doc.name || k.replace('agent:',''),
+                avatar: doc.avatar,
+                articleTitle: r.articleTitle,
+                score: r.score, total: r.total,
+                takenAt: r.takenAt
+              });
+            });
+          }
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+  rows.sort((a,b)=>(b.takenAt||'').localeCompare(a.takenAt||''));
+
+  const wrap = document.getElementById('quizResultsWrap');
+  if(!rows.length){
+    wrap.innerHTML = `<p style="color:var(--muted)">Поки що ніхто не проходив тестів.</p>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="card">
+      <table>
+        <tr><th>Агент</th><th>Тест</th><th>Результат</th><th>Коли</th></tr>
+        ${rows.map(r=>{
+          const perfect = r.score === r.total;
+          const av = avatarInfo(r.avatar);
+          return `<tr>
+            <td><span class="avatar-mini" style="background:${cvHexToRgba(av.color,.25)}">${av.emoji}</span>${escapeHtml(r.agent)}</td>
+            <td>${escapeHtml(r.articleTitle || '(статтю видалено)')}</td>
+            <td style="color:${perfect?'var(--green)':'var(--text)'}">${r.score} з ${r.total}${perfect?' ✓':''}</td>
+            <td class="mono" style="color:var(--muted);font-size:12px">${formatSuggestDate(r.takenAt)}</td>
+          </tr>`;
+        }).join('')}
+      </table>
+    </div>
+  `;
+}
+
+/* ---------------- "ДАВНО НЕ ОНОВЛЮВАЛИСЬ" — сортування статей за датою оновлення ---------------- */
+async function renderStaleArticlesAdmin(){
+  const main = document.getElementById('main');
+  if(!ADMIN_ARTICLES.length) await loadAdminArticles();
+  /* статті, які ще НІ РАЗУ не зберігали новим кодом (немає updatedAt), вважаємо
+     найстарішими з усіх — саме їх найважливіше перевірити першими */
+  const rows = ADMIN_ARTICLES.slice().sort((a,b)=>{
+    if(!a.updatedAt && !b.updatedAt) return (a.title||'').localeCompare(b.title||'');
+    if(!a.updatedAt) return -1;
+    if(!b.updatedAt) return 1;
+    return a.updatedAt.localeCompare(b.updatedAt);
+  });
+  main.innerHTML = `
+    <div class="crumb">Інструменти · Адмін</div>
+    <h1 class="title">Давно не оновлювались</h1>
+    <div class="dept-tag">Статті відсортовані від найдавніше оновленої — зверху те, що варто перевірити першим</div>
+    <div class="card">
+      <table>
+        <tr><th>Стаття</th><th>Розділ</th><th>Оновлено</th></tr>
+        ${rows.map(a=>`
+          <tr class="stale-row" data-open="${a.id}">
+            <td>${escapeHtml(a.title||'(без назви)')}</td>
+            <td class="hint" style="margin:0">${escapeHtml(articleBreadcrumb(a)||a.crumb||'')}</td>
+            <td class="mono" style="color:${a.updatedAt?'var(--muted)':'var(--red)'};font-size:12px">${a.updatedAt ? formatSuggestDate(a.updatedAt) : 'Ще не позначено'}</td>
+          </tr>`).join('')}
+      </table>
+    </div>
+  `;
+  main.querySelectorAll('.stale-row').forEach(tr=>tr.addEventListener('click', ()=>render(tr.dataset.open)));
+}
+
+/* ---------------- "КОРИСТУВАЧІ" — усі, хто створив особистий кабінет ---------------- */
+async function renderUsersAdmin(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="crumb">Інструменти · Адмін</div>
+    <h1 class="title">Користувачі</h1>
+    <div class="dept-tag">Усі агенти, які створили особистий кабінет (нік, пошта, аватар)</div>
+    <div id="usersWrap"><p style="color:var(--muted)">Завантаження…</p></div>
+  `;
+  let rows = [];
+  try{
+    const res = await window.storage.list('agent:');
+    if(res && res.keys && res.keys.length){
+      for(const k of res.keys){
+        try{
+          const item = await window.storage.get(k, true);
+          if(item && item.value){
+            const doc = JSON.parse(item.value);
+            rows.push({
+              name: doc.name || '(без імені)',
+              email: doc.email || k.replace('agent:',''),
+              avatar: doc.avatar,
+              favCount: (doc.favorites||[]).length,
+              quizCount: (doc.quizResults||[]).length
+            });
+          }
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+  rows.sort((a,b)=>a.name.localeCompare(b.name, 'uk'));
+
+  const wrap = document.getElementById('usersWrap');
+  if(!rows.length){
+    wrap.innerHTML = `<p style="color:var(--muted)">Поки що ніхто не створив кабінет.</p>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="card">
+      <table>
+        <tr><th>Агент</th><th>Пошта</th><th>Обране</th><th>Тестів пройдено</th></tr>
+        ${rows.map(r=>{
+          const av = avatarInfo(r.avatar);
+          return `<tr>
+            <td><span class="avatar-mini" style="background:${cvHexToRgba(av.color,.25)}">${av.emoji}</span>${escapeHtml(r.name)}</td>
+            <td class="mono" style="font-size:12px;color:var(--muted)">${escapeHtml(r.email)}</td>
+            <td>${r.favCount}</td>
+            <td>${r.quizCount}</td>
+          </tr>`;
+        }).join('')}
+      </table>
+    </div>
+  `;
+}
+
+/* ---------------- "ЧИ ДОПОМОГЛА СТАТТЯ" — легкий 👍/👎-фідбек, без прив'язки до імені ---------------- */
+function renderFeedbackBlock(article){
+  const voted = localStorage.getItem('kbVoted:'+article.id);
+  return `
+    <div class="card" id="fbCard">
+      <h3>Ця стаття допомогла?</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn${voted==='yes'?' primary':''}" id="fbYesBtn" type="button" ${voted?'disabled':''}>👍 Допомогло</button>
+        <button class="btn${voted==='no'?' primary':''}" id="fbNoBtn" type="button" ${voted?'disabled':''}>👎 Не дуже</button>
+        <span class="admin-only hint" id="fbCounts" style="margin:0">(👍 ${article.fbYes||0} · 👎 ${article.fbNo||0})</span>
+      </div>
+    </div>`;
+}
+function attachFeedbackBlock(article){
+  const yesBtn = document.getElementById('fbYesBtn');
+  const noBtn = document.getElementById('fbNoBtn');
+  async function vote(kind){
+    if(localStorage.getItem('kbVoted:'+article.id)) return;
+    localStorage.setItem('kbVoted:'+article.id, kind);
+    const field = kind==='yes' ? 'fbYes' : 'fbNo';
+    article[field] = (article[field]||0) + 1;
+    try{ await window.storage.set('article:'+article.id, JSON.stringify(article), true); }catch(e){}
+    yesBtn.disabled = true; noBtn.disabled = true;
+    (kind==='yes'?yesBtn:noBtn).classList.add('primary');
+    const countsEl = document.getElementById('fbCounts');
+    if(countsEl) countsEl.textContent = `(👍 ${article.fbYes||0} · 👎 ${article.fbNo||0})`;
+  }
+  yesBtn.addEventListener('click', ()=>vote('yes'));
+  noBtn.addEventListener('click', ()=>vote('no'));
+}
+
+/* ---------------- "ПОВ'ЯЗАНІ СТАТТІ" — ручний вибір адміном, показуються внизу сторінки ---------------- */
+function renderRelatedBlock(article){
+  if(!article.related || !article.related.length) return '';
+  const items = article.related.map(id=>ADMIN_ARTICLES.find(a=>a.id===id)).filter(Boolean);
+  if(!items.length) return '';
+  return `
+    <div class="card" id="relatedCard">
+      <h3>🔗 Пов'язані статті</h3>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        ${items.map(a=>`<div class="related-link" data-open="${a.id}">${escapeHtml(a.title)}</div>`).join('')}
+      </div>
+    </div>`;
+}
+function attachRelatedBlock(){
+  document.querySelectorAll('.related-link[data-open]').forEach(el=>{
+    el.addEventListener('click', ()=>render(el.dataset.open));
+  });
+}
+
 /* ---------------- ТЕСТ ПІД СТАТТЕЮ (самоперевірка, без збереження результатів) ---------------- */
 function renderQuizBlock(quiz){
   return `
@@ -1296,10 +1759,11 @@ function runQuiz(article){
 /* ---------------- TABLE OF CONTENTS ---------------- */
 function buildTOC(){
   const main = document.getElementById('main');
-  /* картки "Тест до статті" й "Запропонувати інфо" — теж .card з <h3> всередині,
-     але це елементи інтерфейсу, а не розділи самої статті — у зміст не мають потрапляти */
+  /* картки "Тест до статті", "Запропонувати інфо", "Ця стаття допомогла?", "Пов'язані статті" —
+     теж .card з <h3> всередині, але це елементи інтерфейсу навколо статті, а не її власні
+     розділи — у зміст не мають потрапляти */
   const headings = Array.from(main.querySelectorAll('.card h3'))
-    .filter(h => !h.closest('#quizCard') && !h.closest('#suggestCard'));
+    .filter(h => !h.closest('#quizCard') && !h.closest('#suggestCard') && !h.closest('#fbCard') && !h.closest('#relatedCard'));
   if(headings.length < 3) return;
   const seen = {};
   const items = [];
@@ -1821,7 +2285,12 @@ async function loadAdminArticles(){
       for(const k of res.keys){
         try{
           const item = await window.storage.get(k, true);
-          if(item && item.value) ADMIN_ARTICLES.push(JSON.parse(item.value));
+          if(item && item.value){
+            const parsed = JSON.parse(item.value);
+            /* захист від "сирітських" чи пошкоджених записів без id — інакше renderNavNode
+               може зациклитись у нескінченну рекурсію (a.parentId===undefined===a.id) */
+            if(parsed && parsed.id) ADMIN_ARTICLES.push(parsed);
+          }
         }catch(e){}
       }
     }
@@ -1874,7 +2343,7 @@ function renderAdminNav(){
     byRozdil[a.crumb].push(a);
   });
 
-  const anchor = document.getElementById('canvasNavGroup');
+  const anchor = document.getElementById('addPageBtn');
   Object.keys(byRozdil).forEach(rozdil=>{
     const group = document.createElement('div');
     group.className = 'nav-group dyn-admin-group';
@@ -1979,7 +2448,10 @@ document.getElementById('addPageBtn').addEventListener('click', async ()=>{
    parentId = id іншої статті, під якою ця має зʼявитись вкладено (довільна глибина) */
 function createDraftArticle(sectionName, prefillTitle, parentId){
   const id = uid('admin-');
-  const article = { id, crumb: sectionName, title: prefillTitle || '', tag:'Додано адміном', body:'', isNew:true };
+  /* tag навмисно порожній — це декоративний підзаголовок-мітка (як "FCO = Виписка + Рефанди"
+     у вбудованих статтях), під нього немає поля в редакторі, тому раніше нові сторінки
+     назавжди лишались із плейсхолдером "Додано адміном", який ніхто не просив показувати */
+  const article = { id, crumb: sectionName, title: prefillTitle || '', tag:'', body:'', isNew:true };
   if(parentId) article.parentId = parentId;
   ADMIN_ARTICLES.push(article);
   renderAdminNav();
@@ -1994,21 +2466,34 @@ function renderArticleEditPage(article){
     <div class="crumb">${articleBreadcrumb(article)} · ${article.isNew ? 'нова підсторінка' : 'редагування'}</div>
     <input class="page-title-input" id="editTitle" placeholder="Заголовок сторінки…" value="${(article.title||'').replace(/"/g,'&quot;')}">
     <div class="rte-toolbar">
+      <button type="button" class="rte-btn" data-cmd="h3" title="Заголовок (для змісту)">H</button>
+      <select class="rte-select" id="rteFontSizeSelect" title="Розмір тексту">
+        <option value="10">10</option>
+        <option value="12">12</option>
+        <option value="13">13</option>
+        <option value="15" selected>15</option>
+        <option value="17">17</option>
+        <option value="20">20</option>
+        <option value="24">24</option>
+        <option value="28">28</option>
+        <option value="34">34</option>
+      </select>
+      <span class="rte-sep"></span>
       <button type="button" class="rte-btn" data-cmd="bold" title="Жирний"><b>B</b></button>
       <button type="button" class="rte-btn" data-cmd="italic" title="Курсив"><i>I</i></button>
-      <button type="button" class="rte-btn" data-cmd="h3" title="Заголовок (для змісту)">H</button>
-      <button type="button" class="rte-btn" data-cmd="ul" title="Список">☰</button>
       <button type="button" class="rte-btn" id="rteTextColorBtn" title="Колір тексту">🖊</button>
+      <button type="button" class="rte-btn" data-cmd="ul" title="Маркований список">☰</button>
       <span class="rte-sep"></span>
-      <button type="button" class="rte-btn" data-block="table" title="Таблиця">▦</button>
-      <button type="button" class="rte-btn" data-block="warning" title="Блок-попередження">⚠️</button>
-      <button type="button" class="rte-btn" data-block="dot" title="Світна крапка (як перед заголовком)">•</button>
-      <button type="button" class="rte-btn" id="rteBadgeBtn" title="Кольорова мітка (свій колір)">🏷</button>
+      <button type="button" class="rte-btn" id="rteLinkBtn" title="Вставити гіперпосилання">🔗</button>
+      <button type="button" class="rte-btn wide" id="rteImgBtn" title="Вставити одне зображення">🖼 Фото</button>
+      <button type="button" class="rte-btn wide" id="rteGalleryBtn" title="Вставити кілька фото одразу">🖼🖼 Галерея</button>
       <span class="rte-sep"></span>
-      <button type="button" class="rte-btn" id="rteLinkBtn" title="Гіперлінк">🔗</button>
-      <button type="button" class="rte-btn" id="rteImgBtn" title="Одне зображення">🖼</button>
-      <button type="button" class="rte-btn" id="rteGalleryBtn" title="Галерея (кілька фото одразу)" style="width:auto;padding:0 10px">🖼🖼 Галерея</button>
-      <button type="button" class="rte-btn" id="rteCanvasBtn" title="Вставити схему з полотна" style="width:auto;padding:0 10px">📐 Схема</button>
+      <button type="button" class="rte-btn wide" data-block="table" title="Вставити таблицю">▦ Таблиця</button>
+      <button type="button" class="rte-btn wide" data-block="warning" title="Вставити блок-попередження (жовтий)">⚠️ Попередження</button>
+      <button type="button" class="rte-btn wide" id="rteBadgeBtn" title="Вставити кольорову мітку-тег">🏷 Мітка</button>
+      <button type="button" class="rte-btn wide" id="rteDotBtn" title="Вставити світну крапку свого кольору">• Крапка</button>
+      <span class="rte-sep"></span>
+      <button type="button" class="rte-btn wide" id="rteCanvasBtn" title="Вставити блок-схему зі стрілками прямо тут">📐 Схема</button>
       <input type="file" id="rteImgInput" accept="image/*" style="display:none">
       <input type="file" id="rteGalleryInput" accept="image/*" multiple style="display:none">
     </div>
@@ -2049,7 +2534,20 @@ function renderArticleEditPage(article){
         <button type="button" class="btn primary" id="bpConfirm">Вставити</button>
       </div>
     </div>
-    <div class="canvas-picker" id="canvasPicker"></div>
+    <div class="badge-picker" id="dotColorPicker">
+      <div class="bp-row">
+        <div class="bp-swatches" id="dotSwatches">
+          <span class="bp-swatch" style="background:#3ee8ff" data-c="#3ee8ff"></span>
+          <span class="bp-swatch" style="background:#4dffb4" data-c="#4dffb4"></span>
+          <span class="bp-swatch" style="background:#ff5c8a" data-c="#ff5c8a"></span>
+          <span class="bp-swatch" style="background:#b26bff" data-c="#b26bff"></span>
+          <span class="bp-swatch" style="background:#ff4fd8" data-c="#ff4fd8"></span>
+          <span class="bp-swatch" style="background:#ffb100" data-c="#ffb100"></span>
+        </div>
+        <input type="color" id="dotCustom" value="#3ee8ff" title="Свій колір">
+      </div>
+      <div class="hint" style="margin:8px 0 0">Оберіть колір — крапка вставиться одразу в курсор.</div>
+    </div>
     <div class="rte" id="fBody" contenteditable="true" data-placeholder="Критерії, відповідальний відділ, готова фраза для клієнта… Заголовки (H) автоматично зʼявляться у змісті сторінки.">${article.body||''}</div>
 
     <div class="card" style="margin-top:22px">
@@ -2059,9 +2557,17 @@ function renderArticleEditPage(article){
       <button class="btn" id="quizAddQBtn" type="button">+ Додати питання</button>
     </div>
 
+    <div class="card" style="margin-top:14px">
+      <h3>🔗 Пов'язані статті (необов'язково)</h3>
+      <div class="hint" style="margin:-4px 0 12px">Покажуться внизу опублікованої сторінки як швидкі посилання на суміжну інформацію.</div>
+      <input type="text" id="relatedFilter" placeholder="Пошук статті за назвою…" style="margin-bottom:10px">
+      <div id="relatedList" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:2px"></div>
+    </div>
+
     <div class="page-actions">
       <button class="btn primary" id="pageSaveBtn">💾 Зберегти сторінку</button>
       <button class="btn" id="pageCancelBtn">Скасувати</button>
+      <button class="btn" id="pageRestorePrevBtn" type="button" style="display:none">↺ Попередня версія</button>
       ${!article.isNew ? '<button class="btn btn-del" id="pageDelBtn">🗑 Видалити сторінку</button>' : ''}
     </div>
   `;
@@ -2075,10 +2581,13 @@ function attachEditorHandlers(article){
   const editTitleEl = document.getElementById('editTitle');
   QUIZ_DRAFT = JSON.parse(JSON.stringify(article.quiz || []));
   const savedQuizSnapshot = JSON.stringify(QUIZ_DRAFT);
+  let RELATED_DRAFT = Array.isArray(article.related) ? [...article.related] : [];
+  const savedRelatedSnapshot = JSON.stringify(RELATED_DRAFT.slice().sort());
   ACTIVE_EDITOR = {
     isDirty: ()=> editTitleEl.value.trim() !== (article.title||'').trim()
               || fBody.innerHTML.trim() !== (article.body||'').trim()
-              || JSON.stringify(QUIZ_DRAFT) !== savedQuizSnapshot,
+              || JSON.stringify(QUIZ_DRAFT) !== savedQuizSnapshot
+              || JSON.stringify(RELATED_DRAFT.slice().sort()) !== savedRelatedSnapshot,
     onLeave: ()=>{
       /* незбережену нову сторінку (ще ніколи не тиснули "Зберегти") прибираємо з навігації,
          щоб не лишався порожній "привид" зліва */
@@ -2089,6 +2598,114 @@ function attachEditorHandlers(article){
   fBody.querySelectorAll('.rte-img-wrap').forEach(wrap=>{
     attachImageResize(wrap);
     if(wrap.classList.contains('cv-embed')) attachCvEmbedDelete(wrap);
+  });
+  /* блок-схеми, що прийшли зі збереженої статті, теж мають "ожити" (стати перетягуваними) */
+  hydrateInlineSchemes(fBody);
+
+  /* ---- автозбереження чернетки в localStorage — страховка від впалої вкладки/інтернету,
+     не від навмисного "Скасувати" (там чернетку явно прибираємо) ---- */
+  const draftKey = 'kbDraft:' + article.id;
+  function saveDraftNow(){
+    try{
+      localStorage.setItem(draftKey, JSON.stringify({
+        title: editTitleEl.value, body: fBody.innerHTML, quiz: QUIZ_DRAFT, related: RELATED_DRAFT, savedAt: Date.now()
+      }));
+    }catch(e){}
+  }
+  let draftTimer = null;
+  function scheduleAutosave(){ clearTimeout(draftTimer); draftTimer = setTimeout(saveDraftNow, 1200); }
+  function clearDraft(){ try{ localStorage.removeItem(draftKey); }catch(e){} }
+  editTitleEl.addEventListener('input', scheduleAutosave);
+  fBody.addEventListener('input', scheduleAutosave);
+
+  /* якщо знайдено чернетку, яка відрізняється від того, що зараз у редакторі (тобто від
+     останньої збереженої версії) — пропонуємо відновити її, а не тихо ігноруємо */
+  try{
+    const rawDraft = localStorage.getItem(draftKey);
+    if(rawDraft){
+      const draft = JSON.parse(rawDraft);
+      const differs = (draft.title||'') !== (article.title||'') || (draft.body||'') !== (article.body||'');
+      if(differs){
+        const main = document.getElementById('main');
+        const banner = document.createElement('div');
+        banner.className = 'draft-banner';
+        banner.innerHTML = `
+          <span>💾 Знайдено незбережену чернетку від ${formatSuggestDate(new Date(draft.savedAt).toISOString())} — відновити?</span>
+          <span style="display:flex;gap:8px">
+            <button type="button" class="btn primary" id="draftRestoreBtn">Відновити</button>
+            <button type="button" class="btn" id="draftDismissBtn">Ігнорувати</button>
+          </span>`;
+        main.insertBefore(banner, main.firstChild);
+        document.getElementById('draftRestoreBtn').addEventListener('click', ()=>{
+          editTitleEl.value = draft.title || '';
+          fBody.innerHTML = draft.body || '';
+          QUIZ_DRAFT = draft.quiz || QUIZ_DRAFT;
+          RELATED_DRAFT = draft.related || RELATED_DRAFT;
+          paintQuizBuilder();
+          paintRelatedList(document.getElementById('relatedFilter').value);
+          hydrateInlineSchemes(fBody);
+          fBody.querySelectorAll('.rte-img-wrap').forEach(wrap=>{
+            attachImageResize(wrap);
+            if(wrap.classList.contains('cv-embed')) attachCvEmbedDelete(wrap);
+          });
+          banner.remove();
+        });
+        document.getElementById('draftDismissBtn').addEventListener('click', ()=>{ clearDraft(); banner.remove(); });
+      }
+    }
+  }catch(e){}
+
+  /* ---- пов'язані статті ---- */
+  function paintRelatedList(filter){
+    const list = document.getElementById('relatedList');
+    const f = (filter||'').toLowerCase().trim();
+    const options = ADMIN_ARTICLES.filter(a=>a.id!==article.id && a.title && (!f || a.title.toLowerCase().includes(f)));
+    if(!options.length){ list.innerHTML = `<div class="hint" style="margin:0">Нічого не знайдено.</div>`; return; }
+    list.innerHTML = options.slice(0,60).map(a=>`
+      <label class="related-pick-row">
+        <input type="checkbox" data-related-id="${a.id}" ${RELATED_DRAFT.includes(a.id)?'checked':''}>
+        <span>${escapeHtml(a.title)}</span>
+      </label>`).join('');
+    list.querySelectorAll('[data-related-id]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const id = cb.dataset.relatedId;
+        if(cb.checked){ if(!RELATED_DRAFT.includes(id)) RELATED_DRAFT.push(id); }
+        else{ RELATED_DRAFT = RELATED_DRAFT.filter(x=>x!==id); }
+        scheduleAutosave();
+      });
+    });
+  }
+  paintRelatedList('');
+  document.getElementById('relatedFilter').addEventListener('input', e=>paintRelatedList(e.target.value));
+
+  /* ---- відновлення попередньої версії статті (один запасний знімок, не повна історія) ----
+     навмисно окремий префікс "articleprev:" (НЕ "article:...:prev") — window.storage.list('article:')
+     робить звичайний префікс-пошук і раніше підхоплював ці резервні копії як самі статті
+     (без id!), через що дерево навігації зациклювалось у нескінченну рекурсію */
+  if(!article.isNew){
+    window.storage.get('articleprev:'+article.id, true).then(res=>{
+      if(res && res.value) document.getElementById('pageRestorePrevBtn').style.display = '';
+    }).catch(()=>{});
+  }
+  document.getElementById('pageRestorePrevBtn').addEventListener('click', async ()=>{
+    if(!confirm('Відновити попередню версію статті? Поточні незбережені зміни в редакторі буде втрачено.')) return;
+    try{
+      const res = await window.storage.get('articleprev:'+article.id, true);
+      if(res && res.value){
+        const prev = JSON.parse(res.value);
+        editTitleEl.value = prev.title || '';
+        fBody.innerHTML = prev.body || '';
+        QUIZ_DRAFT = prev.quiz || [];
+        RELATED_DRAFT = prev.related || [];
+        paintQuizBuilder();
+        paintRelatedList(document.getElementById('relatedFilter').value);
+        fBody.querySelectorAll('.rte-img-wrap').forEach(wrap=>{
+          attachImageResize(wrap);
+          if(wrap.classList.contains('cv-embed')) attachCvEmbedDelete(wrap);
+        });
+        hydrateInlineSchemes(fBody);
+      }
+    }catch(e){}
   });
 
   /* ---- конструктор тесту ---- */
@@ -2115,22 +2732,24 @@ function attachEditorHandlers(article){
         </div>
       </div>`).join('') || `<div class="hint" style="margin-bottom:10px">Питань поки немає — стаття опублікується без тесту.</div>`;
 
-    wrap.querySelectorAll('.quiz-q-text').forEach(inp=>inp.addEventListener('input', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].q = e.target.value; }));
-    wrap.querySelectorAll('.quiz-opt-text').forEach(inp=>inp.addEventListener('input', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].options[+e.target.dataset.oi] = e.target.value; }));
-    wrap.querySelectorAll('.quiz-correct-radio').forEach(r=>r.addEventListener('change', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].correct = +e.target.dataset.oi; }));
-    wrap.querySelectorAll('.quiz-del-q').forEach(b=>b.addEventListener('click', e=>{ QUIZ_DRAFT.splice(+e.target.dataset.qi,1); paintQuizBuilder(); }));
-    wrap.querySelectorAll('.quiz-add-opt').forEach(b=>b.addEventListener('click', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].options.push(''); paintQuizBuilder(); }));
+    wrap.querySelectorAll('.quiz-q-text').forEach(inp=>inp.addEventListener('input', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].q = e.target.value; scheduleAutosave(); }));
+    wrap.querySelectorAll('.quiz-opt-text').forEach(inp=>inp.addEventListener('input', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].options[+e.target.dataset.oi] = e.target.value; scheduleAutosave(); }));
+    wrap.querySelectorAll('.quiz-correct-radio').forEach(r=>r.addEventListener('change', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].correct = +e.target.dataset.oi; scheduleAutosave(); }));
+    wrap.querySelectorAll('.quiz-del-q').forEach(b=>b.addEventListener('click', e=>{ QUIZ_DRAFT.splice(+e.target.dataset.qi,1); paintQuizBuilder(); scheduleAutosave(); }));
+    wrap.querySelectorAll('.quiz-add-opt').forEach(b=>b.addEventListener('click', e=>{ QUIZ_DRAFT[+e.target.dataset.qi].options.push(''); paintQuizBuilder(); scheduleAutosave(); }));
     wrap.querySelectorAll('.quiz-del-opt').forEach(b=>b.addEventListener('click', e=>{
       const qi=+e.target.dataset.qi, oi=+e.target.dataset.oi;
       QUIZ_DRAFT[qi].options.splice(oi,1);
       if(QUIZ_DRAFT[qi].correct===oi) QUIZ_DRAFT[qi].correct = 0;
       else if(QUIZ_DRAFT[qi].correct>oi) QUIZ_DRAFT[qi].correct--;
       paintQuizBuilder();
+      scheduleAutosave();
     }));
   }
   document.getElementById('quizAddQBtn').addEventListener('click', ()=>{
     QUIZ_DRAFT.push({ q:'', options:['',''], correct:0 });
     paintQuizBuilder();
+    scheduleAutosave();
   });
   paintQuizBuilder();
   function saveSelection(){
@@ -2179,11 +2798,6 @@ function attachEditorHandlers(article){
           <tr><td>…</td><td>…</td><td>…</td></tr>
           <tr><td>…</td><td>…</td><td>…</td></tr>
         </table><p><br></p>`;
-      } else if(type==='dot'){
-        /* contenteditable="false" — інакше порожній span ловить курсор УСЕРЕДИНУ себе
-           (нема тексту, за який зачепитись), і весь наступний друк іде в цю 6px-коробку,
-           переносячись по літері вниз; &nbsp; після дає курсору куди стати одразу за крапкою */
-        html = `<span class="glow-dot" contenteditable="false"></span>&nbsp;`;
       }
       document.execCommand('insertHTML', false, html);
       saveSelection();
@@ -2219,6 +2833,7 @@ function attachEditorHandlers(article){
   document.getElementById('rteTextColorBtn').addEventListener('click', ()=>{
     saveSelection();
     badgePicker.classList.remove('open');
+    dotColorPicker.classList.remove('open');
     textColorPicker.classList.toggle('open');
   });
   document.getElementById('textColorSwatches').querySelectorAll('.bp-swatch').forEach(sw=>{
@@ -2236,9 +2851,56 @@ function attachEditorHandlers(article){
     textColorPicker.classList.remove('open');
   });
 
+  /* світна крапка свого кольору — раніше завжди вставлялась блакитною (--cyan)
+     без вибору; тепер спершу відкриває пікер кольору, а вставляється одразу по кліку */
+  const dotColorPicker = document.getElementById('dotColorPicker');
+  const dotSwatches = document.getElementById('dotSwatches');
+  const dotCustom = document.getElementById('dotCustom');
+  function insertDot(color){
+    fBody.focus();
+    restoreSelection();
+    /* contenteditable="false" — інакше порожній span ловить курсор УСЕРЕДИНУ себе
+       (нема тексту, за який зачепитись), і весь наступний друк іде в цю 6px-коробку,
+       переносячись по літері вниз; &nbsp; після дає курсору куди стати одразу за крапкою */
+    document.execCommand('insertHTML', false,
+      `<span class="glow-dot" contenteditable="false" style="background:${color};box-shadow:0 0 8px ${color}"></span>&nbsp;`);
+    dotColorPicker.classList.remove('open');
+  }
+  document.getElementById('rteDotBtn').addEventListener('mousedown', e=>e.preventDefault());
+  document.getElementById('rteDotBtn').addEventListener('click', ()=>{
+    saveSelection();
+    badgePicker.classList.remove('open');
+    textColorPicker.classList.remove('open');
+    dotColorPicker.classList.toggle('open');
+  });
+  dotSwatches.querySelectorAll('.bp-swatch').forEach(sw=>{
+    sw.addEventListener('click', ()=> insertDot(sw.dataset.c));
+  });
+  dotCustom.addEventListener('input', ()=> insertDot(dotCustom.value));
+
+  /* розмір виділеного тексту — звичайний <select> з числами (px), як у Google Docs,
+     замість попапу з розмитими назвами "Великий/Дуже великий". execCommand не вміє
+     довільний px напряму, тому стандартний трюк: спершу execCommand('fontSize','7')
+     (завжди дає надійний <font size="7">...</font> навіть для розірваного виділення),
+     а тоді підміняємо на style="font-size:Npx".
+     Виділення зберігаємо на mousedown (БЕЗ preventDefault — інакше нативний <select>
+     у Chrome взагалі не відкриється), поки фокус ще на #fBody. */
+  const fontSizeSelect = document.getElementById('rteFontSizeSelect');
+  fontSizeSelect.addEventListener('mousedown', ()=> saveSelection());
+  fontSizeSelect.addEventListener('change', ()=>{
+    fBody.focus();
+    restoreSelection();
+    document.execCommand('fontSize', false, '7');
+    fBody.querySelectorAll('font[size="7"]').forEach(el=>{
+      el.removeAttribute('size');
+      el.style.fontSize = fontSizeSelect.value + 'px';
+    });
+  });
+
   document.getElementById('rteBadgeBtn').addEventListener('mousedown', e=>e.preventDefault());
   document.getElementById('rteBadgeBtn').addEventListener('click', ()=>{
     textColorPicker.classList.remove('open');
+    dotColorPicker.classList.remove('open');
     saveSelection();
     editingBadge = null;
     bpText.value = 'мітка';
@@ -2336,37 +2998,17 @@ function attachEditorHandlers(article){
     e.target.value='';
   });
 
+  /* "Схема" тепер одразу вставляє ПОРОЖНЮ живу блок-схему прямо в текст статті —
+     ніякого окремого "Полотна"/пікера більше немає: блоки додаються і зразу видно,
+     як вони виглядатимуть, бо ширина конструктора = реальна ширина статті */
   document.getElementById('rteCanvasBtn').addEventListener('mousedown', e=>e.preventDefault());
-  document.getElementById('rteCanvasBtn').addEventListener('click', async ()=>{
+  document.getElementById('rteCanvasBtn').addEventListener('click', ()=>{
     saveSelection();
-    if(!CANVASES.length) await loadCanvasList();
-    const picker = document.getElementById('canvasPicker');
-    if(!CANVASES.length){
-      picker.innerHTML = `<div class="cp-empty">Немає жодного полотна. Створіть його в розділі «Полотна (адмін)» ліворуч.</div>`;
-    } else {
-      picker.innerHTML = CANVASES.map(c=>`<div class="cp-item" data-cid="${c.id}" data-title="${c.title}">🎨 ${c.title}</div>`).join('');
-      picker.querySelectorAll('.cp-item').forEach(item=>{
-        item.addEventListener('click', async ()=>{
-          const cid = item.dataset.cid;
-          let data = {blocks:[]};
-          try{
-            const res = await window.storage.get('canvas:'+cid, true);
-            if(res && res.value) data = JSON.parse(res.value);
-          }catch(e){}
-          fBody.focus();
-          restoreSelection();
-          document.execCommand('insertHTML', false, renderCanvasEmbedHtml(data) + '&nbsp;');
-          const wraps = fBody.querySelectorAll('.cv-embed');
-          if(wraps.length){
-            const lastWrap = wraps[wraps.length-1];
-            attachImageResize(lastWrap);
-            attachCvEmbedDelete(lastWrap);
-          }
-          picker.classList.remove('open');
-        });
-      });
-    }
-    picker.classList.toggle('open');
+    fBody.focus();
+    restoreSelection();
+    const id = uid('scheme-');
+    document.execCommand('insertHTML', false, renderInlineSchemeShell(id) + '<p><br></p>');
+    hydrateInlineSchemes(fBody);
   });
 
   /* save / cancel / delete */
@@ -2377,12 +3019,26 @@ function attachEditorHandlers(article){
       document.getElementById('editTitle').style.borderBottomColor = !title ? 'var(--red)' : '';
       return;
     }
+    /* один запасний знімок ПОПЕРЕДНЬОЇ версії (не повна історія) — перед тим, як перезаписати
+       статтю, зберігаємо те, що в ній було досі, окремим документом під префіксом "articleprev:"
+       (НЕ "article:...:prev" — той префікс збігається з "article:", який сканує
+       loadAdminArticles(), і резервна копія підхоплювалась як окрема "стаття" без id) */
+    if(!article.isNew){
+      try{
+        await window.storage.set('articleprev:'+article.id, JSON.stringify({
+          title: article.title, body: article.body, quiz: article.quiz, related: article.related, savedAt: article.updatedAt||null
+        }), true);
+      }catch(e){}
+    }
     article.title = title;
     article.body = body;
     article.isNew = false;
+    article.updatedAt = new Date().toISOString();
     /* прибираємо недописані питання (без тексту чи з порожнім варіантом) — не публікуємо зламаний тест */
     article.quiz = QUIZ_DRAFT.filter(q => q.q.trim() && q.options.every(o => o.trim()));
+    article.related = RELATED_DRAFT;
     try{ await window.storage.set('article:'+article.id, JSON.stringify(article), true); }catch(e){}
+    clearDraft();
     renderAdminNav();
     const toast = document.getElementById('toast');
     toast.textContent = '✓ Сторінку збережено';
@@ -2394,6 +3050,7 @@ function attachEditorHandlers(article){
 
   document.getElementById('pageCancelBtn').addEventListener('click', ()=>{
     ACTIVE_EDITOR = null;
+    clearDraft();
     if(article.isNew){
       ADMIN_ARTICLES = ADMIN_ARTICLES.filter(a=>a.id!==article.id);
       renderAdminNav();
@@ -2454,43 +3111,15 @@ function attachImageResize(wrap){
   });
 }
 
-/* ---------------- CANVAS (multiple named boards, Canva-style) ---------------- */
-let CANVASES = [];      // [{id, title}]
-let CANVAS_BLOCKS = []; // blocks of currently open canvas (type: 'text'|'rect'|'img'|'arrow')
-let CURRENT_CANVAS_ID = null;
-let ARROW_LINK_MODE = false;
-let ARROW_LINK_FIRST = null;
+/* ---------------- INLINE БЛОК-СХЕМА (блоки + стрілки прямо в тілі статті) ----------------
+   Замінює колишній окремий розділ "Полотна": раніше схему малювали на окремій сторінці
+   розміром 2200×1400, а тоді її статичний знімок ВСТАВЛЯВСЯ в статтю зі стисненням до
+   вузької ширини — саме це стиснення й ламало текст у блоках (не влазив, обрізався).
+   Тепер схема — це живий віджет прямо всередині #fBody: працює одразу в реальній ширині
+   статті (без жодного масштабування), і блоки самі ростуть у висоту під свій текст замість
+   того, щоб обрізатись. Що бачиш під час редагування — те й піде в опубліковану статтю,
+   бо це буквально один і той самий DOM/CSS в обох режимах (hydrateInlineSchemes). */
 const CV_SWATCHES = ['#4dffb4','#ff5c8a','#3ee8ff','#b26bff','#ff4fd8','#ffb100','#9089ad'];
-
-const CV_AI_FILL_PROMPT = [
-'Ти допомагаєш перетворити опис процесу чи схеми на JSON-розкладку блоків для візуального конструктора схем (полотно з прямокутними блоками, зʼєднаними стрілками) у внутрішньому довіднику агентів контакт-центру.',
-'',
-'ФОРМАТ ВІДПОВІДІ: видай ЛИШЕ валідний JSON, без пояснень, без markdown-огорожі (```), без жодного тексту до чи після.',
-'',
-'СХЕМА JSON:',
-'{',
-'  "blocks": [',
-'    { "id": "a1", "type": "rect", "x": 100, "y": 100, "w": 260, "h": 120, "content": "Текст у блоці (можна <b>...</b>, <br>)", "color": "#4dffb4", "textColor": "#ffffff" }',
-'  ],',
-'  "arrows": [',
-'    { "from": "a1", "to": "a2", "color": "#b26bff" }',
-'  ]',
-'}',
-'',
-'ПРАВИЛА:',
-'- Полотно має розмір 2200×1400 умовних пікселів — розташовуй блоки в цих межах, з відступами між ними, щоб вони не накладались одне на одне.',
-'- "type": "rect" — блок з рамкою (для головних кроків/сутностей), "type": "text" — просто текст без рамки (для підписів/приміток).',
-'- "id" — короткий унікальний рядок (a1, a2, b1…), потрібен лише щоб звʼязати стрілки — на самому полотні не показується.',
-'- "color" і "textColor" — необовʼязкові, hex-колір (напр. "#ff5c8a"). Якщо не вказати — буде колір за замовчуванням.',
-'- "arrows" — необовʼязкові, "from"/"to" мають вказувати на існуючі "id" з "blocks".',
-'- Орієнтовний розмір блоків: w від 160 до 320, h від 70 до 180.',
-'- Розбивай складний процес на кілька послідовних блоків зі стрілками, а не один величезний блок.',
-'',
-'— — —',
-'Нижче встав опис процесу чи схеми, яку треба перетворити на блоки:',
-'',
-''
-].join('\n');
 
 function cvHexToRgba(hex, alpha){
   const h = (hex||'#b26bff').replace('#','');
@@ -2498,507 +3127,398 @@ function cvHexToRgba(hex, alpha){
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-/* точка на межі блока в напрямку (towardX,towardY) від його центру — щоб стрілка
-   починалась/закінчувалась на краю блока, а не стирчала з середини */
-function cvEdgePoint(block, towardX, towardY){
-  const cx = block.x + block.w/2, cy = block.y + block.h/2;
-  let dx = towardX - cx, dy = towardY - cy;
-  if(dx===0 && dy===0) dx = 1;
-  const halfW = block.w/2, halfH = block.h/2;
-  const scaleX = dx!==0 ? halfW/Math.abs(dx) : Infinity;
-  const scaleY = dy!==0 ? halfH/Math.abs(dy) : Infinity;
-  const scale = Math.min(scaleX, scaleY);
-  return { x: cx+dx*scale, y: cy+dy*scale };
+/* порожня "оболонка" схеми, яку вставляємо в текст статті — самі блоки домонтовує
+   hydrateInlineSchemes(); data-scheme зберігає стан у форматі JSON прямо в атрибуті,
+   тому він автоматично зберігається разом із рештою HTML статті, без окремого запису в БД */
+function renderInlineSchemeShell(id){
+  return `<div class="inline-scheme" id="${id}" contenteditable="false" data-scheme="[]">
+    <div class="inline-scheme-toolbar admin-only">
+      <button type="button" data-act="text">+ Текст</button>
+      <button type="button" data-act="rect">+ Блок</button>
+      <button type="button" data-act="img">+ Фото</button>
+      <button type="button" data-act="arrow">+ Стрілка</button>
+      <input type="file" accept="image/*" data-role="imgInput" style="display:none">
+      <button type="button" class="is-del" data-act="del">🗑 Видалити схему</button>
+    </div>
+    <div class="inline-scheme-board"><svg class="inline-scheme-arrows"></svg></div>
+  </div>`;
 }
 
-/* перемальовує SVG-шар стрілок у живому редакторі полотна — з поточних координат блоків */
-function redrawArrows(){
-  const svg = document.getElementById('cvArrowSvg');
-  if(!svg) return;
-  const arrows = CANVAS_BLOCKS.filter(x=>x.type==='arrow');
-  let defs = '', elems = '';
-  arrows.forEach(a=>{
-    const from = CANVAS_BLOCKS.find(x=>x.id===a.from);
-    const to = CANVAS_BLOCKS.find(x=>x.id===a.to);
-    if(!from || !to) return;
-    const p1 = cvEdgePoint(from, to.x+to.w/2, to.y+to.h/2);
-    const p2 = cvEdgePoint(to, from.x+from.w/2, from.y+from.h/2);
-    const color = a.color || '#b26bff';
-    defs += `<marker id="ah-${a.id}" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="${color}"/></marker>`;
-    elems += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${color}" stroke-width="3" marker-end="url(#ah-${a.id})"/>
-      <g class="admin-only">
-        <circle class="cv-arrow-del" data-aid="${a.id}" cx="${(p1.x+p2.x)/2}" cy="${(p1.y+p2.y)/2}" r="9" fill="rgba(255,92,138,.85)" style="cursor:pointer;pointer-events:auto"/>
-        <text x="${(p1.x+p2.x)/2}" y="${(p1.y+p2.y)/2+4}" text-anchor="middle" font-size="12" fill="#fff" style="pointer-events:none;user-select:none">×</text>
-      </g>`;
+/* знаходить усі ще не "оживлені" схеми всередині root (стаття при відкритті в редакторі
+   АБО опублікована стаття при читанні — обидва режими проходять через один код) і монтує
+   в них живі блоки за збереженими даними */
+function hydrateInlineSchemes(root){
+  root.querySelectorAll('.inline-scheme[data-scheme]').forEach(wrap=>{
+    if(wrap.dataset.hydrated) return;
+    wrap.dataset.hydrated = '1';
+    let blocks = [];
+    try{ blocks = JSON.parse(wrap.dataset.scheme) || []; }catch(e){}
+    mountInlineScheme(wrap, blocks);
   });
-  svg.innerHTML = `<defs>${defs}</defs>${elems}`;
-  svg.querySelectorAll('.cv-arrow-del').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      CANVAS_BLOCKS = CANVAS_BLOCKS.filter(x=>x.id!==el.dataset.aid);
-      redrawArrows();
+}
+
+/* кожна .inline-scheme отримує свій ІЗОЛЬОВАНИЙ стан через замикання — на відміну від
+   старого єдиного глобального полотна, в одній статті тепер може бути кілька таких схем */
+function mountInlineScheme(wrap, initialBlocks){
+  let blocks = initialBlocks;
+  const board = wrap.querySelector('.inline-scheme-board');
+  const svg = wrap.querySelector('.inline-scheme-arrows');
+  let arrowLinkMode = false, arrowLinkFirst = null;
+
+  function persist(){ wrap.dataset.scheme = JSON.stringify(blocks); }
+
+  /* .inline-scheme-board не росте автоматично під абсолютно позиціоновані блоки —
+     тому висоту робочої області підганяємо вручну під найнижчий блок */
+  function growBoardToFit(){
+    let maxBottom = 140;
+    board.querySelectorAll('.cv-block').forEach(el=>{
+      maxBottom = Math.max(maxBottom, el.offsetTop + el.offsetHeight);
     });
-  });
-}
-
-function exitArrowLinkMode(){
-  ARROW_LINK_MODE = false;
-  ARROW_LINK_FIRST = null;
-  const btn = document.getElementById('cvAddArrow');
-  if(btn){ btn.textContent = '+ Стрілка'; btn.classList.remove('linking'); }
-  document.querySelectorAll('.cv-block.link-selected').forEach(el=>el.classList.remove('link-selected'));
-}
-
-/* статичний HTML-знімок полотна для вставки прямо в текст статті (не живе посилання —
-   якщо полотно потім зміниться, вставлена картинка в статті лишиться такою, якою була) */
-function renderCanvasEmbedHtml(data){
-  const W = 2200, H = 1400;
-  const wrapId = uid('cvw-');
-  const blocks = data.blocks || [];
-  const shapes = blocks.filter(b=>b.type!=='arrow');
-  const arrows = blocks.filter(b=>b.type==='arrow');
-
-  const blocksHtml = shapes.map(b=>{
-    const left=(b.x/W*100).toFixed(2), top=(b.y/H*100).toFixed(2), w=(b.w/W*100).toFixed(2), h=(b.h/H*100).toFixed(2);
-    const cls = 'cv-block ' + (b.type==='text'?'cv-text':b.type==='rect'?'cv-rect':'cv-img');
-    const colorStyle = (b.color && b.type!=='img') ? `background:${cvHexToRgba(b.color,.14)};border-color:${cvHexToRgba(b.color,.45)};` : '';
-    const style = `left:${left}%;top:${top}%;width:${w}%;height:${h}%;${colorStyle}`;
-    const textStyle = (b.textColor && b.type!=='img') ? ` style="color:${b.textColor}"` : '';
-    const inner = b.type==='img' ? `<img src="${b.content}">` : `<div class="cv-content"${textStyle}>${b.content}</div>`;
-    return `<div class="${cls}" style="${style}">${inner}</div>`;
-  }).join('');
-
-  let defs = '', lines = '';
-  arrows.forEach(a=>{
-    const from = shapes.find(x=>x.id===a.from), to = shapes.find(x=>x.id===a.to);
-    if(!from || !to) return;
-    const p1 = cvEdgePoint(from, to.x+to.w/2, to.y+to.h/2);
-    const p2 = cvEdgePoint(to, from.x+from.w/2, from.y+from.h/2);
-    const color = a.color || '#b26bff';
-    /* id мітки-стрілки прив'язаний до wrapId, а не лише до a.id — інакше та сама схема,
-       вставлена в статтю двічі (наприклад, до і після редагування кольору), ділила б
-       один <marker> на двох, і колір наконечника стрілки одного з двох знімків був би невірним */
-    defs += `<marker id="ahe-${wrapId}-${a.id}" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="${color}"/></marker>`;
-    lines += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${color}" stroke-width="4" marker-end="url(#ahe-${wrapId}-${a.id})"/>`;
-  });
-
-  return `<span class="rte-img-wrap cv-embed" id="${wrapId}" contenteditable="false"><span class="cv-embed-inner">${blocksHtml}<svg class="cv-embed-arrows" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs>${defs}</defs>${lines}</svg></span><span class="rte-resize-handle"></span><span class="cv-embed-del admin-only" title="Видалити схему">×</span></span>`;
-}
-
-/* клік усередині вставленої схеми не завжди виділяє її як єдиний non-editable-острівець
-   (складна вкладена структура блоків), тому Backspace ненадійний — явна кнопка видалення */
-function attachCvEmbedDelete(wrap){
-  const btn = wrap.querySelector('.cv-embed-del');
-  if(btn) btn.addEventListener('click', ()=>wrap.remove());
-}
-
-async function loadCanvasList(){
-  CANVASES = [];
-  try{
-    const res = await window.storage.list('canvas:');
-    if(res && res.keys && res.keys.length){
-      for(const k of res.keys){
-        try{
-          const item = await window.storage.get(k, true);
-          if(item && item.value){
-            const data = JSON.parse(item.value);
-            CANVASES.push({id:data.id, title:data.title});
-          }
-        }catch(e){}
-      }
-    }
-  }catch(e){}
-  renderCanvasNav();
-}
-
-function renderCanvasNav(){
-  const group = document.getElementById('canvasNavGroup');
-  group.querySelectorAll('.nav-item').forEach(n=>n.remove());
-  CANVASES.forEach(c=>{
-    const el = document.createElement('div');
-    el.className = 'nav-item';
-    el.dataset.view = 'canvas:'+c.id;
-    el.textContent = '🎨 ' + c.title;
-    el.addEventListener('click', ()=>render('canvas:'+c.id));
-    group.appendChild(el);
-  });
-  const all = document.createElement('div');
-  all.className = 'nav-item';
-  all.style.color = 'var(--cyan)';
-  all.textContent = '+ Усі полотна / створити нове';
-  all.addEventListener('click', ()=>render('canvas'));
-  group.appendChild(all);
-}
-
-async function saveCanvasData(){
-  if(!CURRENT_CANVAS_ID) return;
-  const title = (CANVASES.find(c=>c.id===CURRENT_CANVAS_ID)||{}).title || 'Без назви';
-  try{
-    await window.storage.set('canvas:'+CURRENT_CANVAS_ID, JSON.stringify({id:CURRENT_CANVAS_ID, title, blocks:CANVAS_BLOCKS}), true);
-  }catch(e){}
-}
-
-async function createCanvas(title){
-  const id = uid('c');
-  CANVASES.push({id, title});
-  CURRENT_CANVAS_ID = id;
-  CANVAS_BLOCKS = [];
-  try{ await window.storage.set('canvas:'+id, JSON.stringify({id, title, blocks:[]}), true); }catch(e){}
-  renderCanvasNav();
-  render('canvas:'+id);
-}
-
-/* view === 'canvas' -> list of all boards; 'canvas:<id>' -> the board itself */
-async function renderCanvas(view){
-  const main = document.getElementById('main');
-  if(!CANVASES.length) await loadCanvasList();
-
-  if(view === 'canvas'){
-    main.innerHTML = `
-      <div class="crumb">Інструменти · Адмін</div>
-      <h1 class="title">Полотна</h1>
-      <div class="dept-tag">Створюй окремі полотна для різних схем, потім вставляй їх у статті</div>
-      <div class="canvas-card-grid" id="canvasGrid"></div>
-      <div class="new-canvas-row">
-        <input type="text" id="newCanvasName" placeholder="Назва нового полотна, напр. «Схема добронювання інфанта»">
-        <button class="btn primary" id="newCanvasBtn">+ Створити</button>
-      </div>
-    `;
-    const grid = document.getElementById('canvasGrid');
-    if(!CANVASES.length){
-      grid.innerHTML = `<div style="color:var(--muted);font-size:13px">Поки що немає жодного полотна — створіть перше нижче.</div>`;
-    }
-    CANVASES.forEach(c=>{
-      const card = document.createElement('div');
-      card.className = 'canvas-card';
-      card.innerHTML = `<div class="cc-icon">🎨</div><div class="cc-title">${c.title}</div><div class="cc-meta">${c.id}</div>`;
-      card.addEventListener('click', ()=>render('canvas:'+c.id));
-      grid.appendChild(card);
-    });
-    document.getElementById('newCanvasBtn').addEventListener('click', ()=>{
-      const name = document.getElementById('newCanvasName').value.trim();
-      if(!name) return;
-      createCanvas(name);
-    });
-    return;
+    board.style.minHeight = (maxBottom + 28) + 'px';
   }
 
-  // single board
-  const id = view.split(':')[1];
-  CURRENT_CANVAS_ID = id;
-  let title = (CANVASES.find(c=>c.id===id)||{}).title;
-  try{
-    const res = await window.storage.get('canvas:'+id, true);
-    if(res && res.value){
-      const data = JSON.parse(res.value);
-      CANVAS_BLOCKS = data.blocks || [];
-      title = data.title;
-    } else { CANVAS_BLOCKS = []; }
-  }catch(e){ CANVAS_BLOCKS = []; }
+  /* точка на межі блока в напрямку (towardX,towardY) — рахуємо із ЖИВОГО розміру
+     блока (offsetWidth/Height), а не зі збережених b.w/b.h: висота тексту-блоку може
+     вирости після редагування змісту, і стрілка має вказувати на актуальний край */
+  function cvEdgePointLive(el, towardX, towardY){
+    const x=el.offsetLeft, y=el.offsetTop, w=el.offsetWidth, h=el.offsetHeight;
+    const cx=x+w/2, cy=y+h/2;
+    let dx=towardX-cx, dy=towardY-cy;
+    if(dx===0 && dy===0) dx=1;
+    const halfW=w/2, halfH=h/2;
+    const scaleX = dx!==0 ? halfW/Math.abs(dx) : Infinity;
+    const scaleY = dy!==0 ? halfH/Math.abs(dy) : Infinity;
+    const scale = Math.min(scaleX, scaleY);
+    return { x: cx+dx*scale, y: cy+dy*scale };
+  }
 
-  let cvSavedSnapshot = JSON.stringify(CANVAS_BLOCKS);
-  ACTIVE_EDITOR = { isDirty: ()=>JSON.stringify(CANVAS_BLOCKS)!==cvSavedSnapshot, onLeave: ()=>{} };
-  exitArrowLinkMode();
-
-  main.innerHTML = `
-    <div class="back-link" id="cvBack">← Усі полотна</div>
-    <div class="crumb">Інструменти · Полотно</div>
-    <h1 class="title">${title || 'Полотно'}</h1>
-    <div class="dept-tag">Перетягуй, змінюй розмір, редагуй текст просто на полотні (подвійний клік). Наведи на блок — зʼявиться 🎨 (колір фону), A (колір тексту) і 🗑 (видалити).</div>
-    <div class="canvas-toolbar admin-only">
-      <button id="cvAddText">+ Текст</button>
-      <button id="cvAddRect">+ Блок / рамка</button>
-      <button id="cvAddImg">+ Картинка</button>
-      <button id="cvAddArrow">+ Стрілка</button>
-      <input type="file" id="cvImgInput" accept="image/*" style="display:none">
-      <button class="save-btn" id="cvSave">💾 Зберегти полотно</button>
-    </div>
-    <div class="card admin-only">
-      <h3>🤖 Імпорт схеми через AI / JSON <button class="edit-toggle-btn" id="cvAiFillToggle" style="margin-left:6px">Показати</button></h3>
-      <div id="cvAiFillPanel" style="display:none">
-        <p style="color:var(--muted);font-size:12.5px;margin:2px 0 12px">Скопіюйте промпт → вставте після нього опис процесу в будь-якому окремому AI-чаті (не тут — дані нікуди звідси не йдуть) → скопіюйте відповідь → вставте нижче. Блоки додадуться до вже наявних на полотні.</p>
-        <textarea class="rte" id="cvAiPromptText" readonly style="min-height:180px;font-family:'JetBrains Mono',monospace;font-size:11.5px;white-space:pre-wrap"></textarea>
-        <button class="btn primary" id="cvCopyPromptBtn" style="margin-top:10px">📋 Скопіювати промпт</button>
-        <div style="margin-top:20px;padding-top:16px;border-top:1px dashed var(--glass-border)">
-          <label class="mono" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Вставте відповідь AI (JSON) сюди</label>
-          <textarea class="rte" id="cvAiJsonInput" style="min-height:140px;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:11.5px" placeholder='{"blocks": [...], "arrows": [...]}'></textarea>
-          <div id="cvAiImportError" style="color:var(--red);font-size:12px;margin-top:8px;display:none"></div>
-          <button class="btn primary" id="cvApplyAiJsonBtn" style="margin-top:12px">✓ Додати блоки на полотно</button>
-        </div>
-      </div>
-    </div>
-    <div class="canvas-board" id="cvBoard"><div class="canvas-inner" id="cvInner">
-      <svg id="cvArrowSvg" style="position:absolute;left:0;top:0;width:2200px;height:1400px;pointer-events:none"></svg>
-    </div></div>
-    <div class="hint" style="margin-top:10px;color:var(--muted);font-size:12px">Полотно спільне для команди (shared) — усі бачитимуть однакову версію після збереження. Щоб вставити цю схему у статтю — відкрийте редактор статті → кнопка «📐 Схема».</div>
-  `;
-  document.getElementById('cvBack').addEventListener('click', ()=>render('canvas'));
-
-  document.getElementById('cvAiPromptText').value = CV_AI_FILL_PROMPT;
-  document.getElementById('cvAiFillToggle').addEventListener('click', ()=>{
-    const panel = document.getElementById('cvAiFillPanel');
-    const open = panel.style.display !== 'none';
-    panel.style.display = open ? 'none' : 'block';
-    document.getElementById('cvAiFillToggle').textContent = open ? 'Показати' : 'Сховати';
-  });
-  document.getElementById('cvCopyPromptBtn').addEventListener('click', async ()=>{
-    const ta = document.getElementById('cvAiPromptText');
-    try{ await navigator.clipboard.writeText(ta.value); }
-    catch(e){
-      ta.removeAttribute('readonly'); ta.focus(); ta.select();
-      try{ document.execCommand('copy'); }catch(e2){}
-      ta.setAttribute('readonly','readonly');
-    }
-    const btn = document.getElementById('cvCopyPromptBtn');
-    const orig = btn.textContent;
-    btn.textContent = '✓ Скопійовано';
-    setTimeout(()=>btn.textContent = orig, 1600);
-  });
-  document.getElementById('cvApplyAiJsonBtn').addEventListener('click', ()=>{
-    const errEl = document.getElementById('cvAiImportError');
-    errEl.style.display = 'none';
-    let raw = document.getElementById('cvAiJsonInput').value.trim();
-    raw = raw.replace(/^```(json)?/i,'').replace(/```$/,'').trim();
-    let parsed;
-    try{ parsed = JSON.parse(raw); }
-    catch(e){ errEl.textContent = '⚠️ Не вдалося розпізнати JSON. Перевірте, чи скопійована повна відповідь без зайвого тексту.'; errEl.style.display='block'; return; }
-    if(!parsed.blocks || !Array.isArray(parsed.blocks) || !parsed.blocks.length){
-      errEl.textContent = '⚠️ У JSON бракує непорожнього масиву "blocks".'; errEl.style.display='block'; return;
-    }
-    const idMap = {};
-    const newBlocks = parsed.blocks.map(b=>{
-      const id = uid('cv-');
-      if(b.id) idMap[b.id] = id;
-      return {
-        id, type: b.type==='text'?'text':'rect',
-        x:+b.x||0, y:+b.y||0, w:Math.max(60,+b.w||200), h:Math.max(40,+b.h||100),
-        content: b.content||'', color: b.color||undefined, textColor: b.textColor||undefined
-      };
+  function redrawArrows(){
+    const arrows = blocks.filter(x=>x.type==='arrow');
+    svg.setAttribute('viewBox', `0 0 ${Math.max(1,board.clientWidth)} ${Math.max(1,board.clientHeight)}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    let defs = '', elems = '';
+    arrows.forEach(a=>{
+      const fromEl = board.querySelector(`[data-id="${a.from}"]`);
+      const toEl = board.querySelector(`[data-id="${a.to}"]`);
+      if(!fromEl || !toEl) return;
+      const toCx = toEl.offsetLeft+toEl.offsetWidth/2, toCy = toEl.offsetTop+toEl.offsetHeight/2;
+      const fromCx = fromEl.offsetLeft+fromEl.offsetWidth/2, fromCy = fromEl.offsetTop+fromEl.offsetHeight/2;
+      const p1 = cvEdgePointLive(fromEl, toCx, toCy);
+      const p2 = cvEdgePointLive(toEl, fromCx, fromCy);
+      const color = a.color || '#b26bff';
+      defs += `<marker id="ah-${a.id}" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="${color}"/></marker>`;
+      elems += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${color}" stroke-width="3" marker-end="url(#ah-${a.id})"/>
+        <g class="admin-only">
+          <circle class="cv-arrow-del" data-aid="${a.id}" cx="${(p1.x+p2.x)/2}" cy="${(p1.y+p2.y)/2}" r="9" fill="rgba(255,92,138,.85)" style="cursor:pointer;pointer-events:auto"/>
+          <text x="${(p1.x+p2.x)/2}" y="${(p1.y+p2.y)/2+4}" text-anchor="middle" font-size="12" fill="#fff" style="pointer-events:none;user-select:none">×</text>
+        </g>`;
     });
-    const newArrows = (Array.isArray(parsed.arrows) ? parsed.arrows : [])
-      .filter(a=>idMap[a.from] && idMap[a.to])
-      .map(a=>({ id: uid('cv-'), type:'arrow', from: idMap[a.from], to: idMap[a.to], color: a.color || '#b26bff' }));
-    CANVAS_BLOCKS = CANVAS_BLOCKS.concat(newBlocks, newArrows);
-    newBlocks.forEach(b=>mountCanvasBlock(b));
-    redrawArrows();
-    document.getElementById('cvAiJsonInput').value = '';
-    const toast = document.getElementById('toast');
-    toast.textContent = `✓ Додано блоків: ${newBlocks.length}, стрілок: ${newArrows.length} — перевірте розташування та збережіть`;
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'), 3000);
-  });
+    svg.innerHTML = `<defs>${defs}</defs>${elems}`;
+    svg.querySelectorAll('.cv-arrow-del').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        blocks = blocks.filter(x=>x.id!==el.dataset.aid);
+        persist();
+        redrawArrows();
+      });
+    });
+  }
 
-  CANVAS_BLOCKS.forEach(b=>{ if(b.type!=='arrow') mountCanvasBlock(b); });
+  function exitArrowLinkMode(){
+    arrowLinkMode = false;
+    arrowLinkFirst = null;
+    const btn = wrap.querySelector('[data-act="arrow"]');
+    if(btn){ btn.textContent = '+ Стрілка'; btn.classList.remove('linking'); }
+    board.querySelectorAll('.cv-block.link-selected').forEach(el=>el.classList.remove('link-selected'));
+  }
+
+  function applyCvBlockColor(el, b){
+    if(b.type==='img' || !b.color) return;
+    el.style.background = cvHexToRgba(b.color, .14);
+    el.style.borderColor = cvHexToRgba(b.color, .45);
+  }
+  function applyCvTextColor(el, b){
+    const contentEl = el.querySelector('.cv-content');
+    if(contentEl) contentEl.style.color = b.textColor || '';
+  }
+  function applyCvFontSize(el, b){
+    const contentEl = el.querySelector('.cv-content');
+    if(contentEl) contentEl.style.fontSize = b.fontSize ? b.fontSize+'px' : '';
+  }
+  function closeAllCvPopovers(except){
+    board.querySelectorAll('.cv-color-popover.open, .cv-textcolor-popover.open, .cv-fontsize-popover.open').forEach(p=>{ if(p!==except) p.classList.remove('open'); });
+  }
+
+  function mountBlock(b){
+    const el = document.createElement('div');
+    el.className = 'cv-block ' + (b.type==='text'?'cv-text':b.type==='rect'?'cv-rect':'cv-img');
+    el.style.left = b.x+'px'; el.style.top = b.y+'px'; el.style.width = b.w+'px';
+    /* для img — фіксована висота (обрізається/заповнює); для тексту — лише мінімальна,
+       щоб довгий текст сам розсовував блок замість того, щоб ховатись за рамкою */
+    if(b.type==='img') el.style.height = b.h+'px'; else el.style.minHeight = b.h+'px';
+    el.dataset.id = b.id;
+
+    const contentHtml = b.type==='img'
+      ? `<img src="${b.content}">`
+      : `<div class="cv-content" contenteditable="false">${b.content}</div>`;
+
+    el.innerHTML = `
+      <div class="cv-clip">
+        <div class="cv-drag"></div>
+        ${contentHtml}
+      </div>
+      <span class="cv-del admin-only">×</span>
+      <span class="cv-resize admin-only"></span>
+      ${b.type!=='img' ? `
+      <span class="cv-color-btn admin-only" title="Колір фону">🎨</span>
+      <div class="cv-color-popover">${CV_SWATCHES.map(c=>`<span class="cv-swatch" data-c="${c}" style="background:${c}"></span>`).join('')}</div>
+      <span class="cv-textcolor-btn admin-only" title="Колір тексту">A</span>
+      <div class="cv-textcolor-popover">${CV_SWATCHES.map(c=>`<span class="cv-swatch" data-c="${c}" style="background:${c}"></span>`).join('')}</div>
+      <span class="cv-fontsize-btn admin-only" title="Розмір тексту">🔠</span>
+      <div class="cv-fontsize-popover">
+        <button type="button" data-size="10" style="font-size:9px">S</button>
+        <button type="button" data-size="13.5" style="font-size:11px">M</button>
+        <button type="button" data-size="17" style="font-size:13px">L</button>
+        <button type="button" data-size="22" style="font-size:15px">XL</button>
+      </div>` : ''}
+    `;
+    board.appendChild(el);
+    applyCvBlockColor(el, b);
+    applyCvTextColor(el, b);
+    applyCvFontSize(el, b);
+
+    const dragHandle = el.querySelector('.cv-drag');
+    dragHandle.addEventListener('mousedown', e=>{
+      if(!document.body.classList.contains('admin')) return;
+      e.preventDefault();
+      if(arrowLinkMode){
+        if(!arrowLinkFirst){
+          arrowLinkFirst = b.id;
+          el.classList.add('link-selected');
+          wrap.querySelector('[data-act="arrow"]').textContent = 'Обери другий блок…';
+          return;
+        }
+        if(arrowLinkFirst === b.id){ exitArrowLinkMode(); return; }
+        addBlock({type:'arrow', from:arrowLinkFirst, to:b.id, color:'#b26bff'});
+        exitArrowLinkMode();
+        return;
+      }
+      const startX=e.clientX, startY=e.clientY, startL=el.offsetLeft, startT=el.offsetTop;
+      function onMove(ev){
+        const nx = startL + (ev.clientX-startX), ny = startT + (ev.clientY-startY);
+        el.style.left = Math.max(0,nx)+'px'; el.style.top = Math.max(0,ny)+'px';
+        b.x = el.offsetLeft; b.y = el.offsetTop;
+        redrawArrows();
+        growBoardToFit();
+      }
+      function onUp(){
+        document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+        persist();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    const resizeHandle = el.querySelector('.cv-resize');
+    resizeHandle.addEventListener('mousedown', e=>{
+      e.preventDefault(); e.stopPropagation();
+      const startX=e.clientX, startY=e.clientY, startW=el.offsetWidth, startH=el.offsetHeight;
+      function onMove(ev){
+        const nw = Math.max(60, startW+(ev.clientX-startX)), nh = Math.max(40, startH+(ev.clientY-startY));
+        el.style.width = nw+'px';
+        if(b.type==='img') el.style.height = nh+'px'; else el.style.minHeight = nh+'px';
+        b.w = nw; b.h = nh;
+        redrawArrows();
+        growBoardToFit();
+      }
+      function onUp(){
+        document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+        persist();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    el.querySelector('.cv-del').addEventListener('click', ()=>{
+      blocks = blocks.filter(x=>x.id!==b.id && !(x.type==='arrow' && (x.from===b.id || x.to===b.id)));
+      el.remove();
+      persist();
+      redrawArrows();
+      growBoardToFit();
+    });
+
+    if(b.type!=='img'){
+      const colorBtn = el.querySelector('.cv-color-btn');
+      const popover = el.querySelector('.cv-color-popover');
+      colorBtn.addEventListener('click', e=>{
+        e.stopPropagation();
+        closeAllCvPopovers(popover);
+        popover.classList.toggle('open');
+      });
+      popover.querySelectorAll('.cv-swatch').forEach(sw=>{
+        sw.addEventListener('click', e=>{
+          e.stopPropagation();
+          b.color = sw.dataset.c;
+          applyCvBlockColor(el, b);
+          popover.classList.remove('open');
+          persist();
+        });
+      });
+
+      const textColorBtn = el.querySelector('.cv-textcolor-btn');
+      const textPopover = el.querySelector('.cv-textcolor-popover');
+      textColorBtn.addEventListener('click', e=>{
+        e.stopPropagation();
+        closeAllCvPopovers(textPopover);
+        textPopover.classList.toggle('open');
+      });
+      textPopover.querySelectorAll('.cv-swatch').forEach(sw=>{
+        sw.addEventListener('click', e=>{
+          e.stopPropagation();
+          b.textColor = sw.dataset.c;
+          applyCvTextColor(el, b);
+          textPopover.classList.remove('open');
+          persist();
+        });
+      });
+
+      const fontBtn = el.querySelector('.cv-fontsize-btn');
+      const fontPopover = el.querySelector('.cv-fontsize-popover');
+      fontBtn.addEventListener('click', e=>{
+        e.stopPropagation();
+        closeAllCvPopovers(fontPopover);
+        fontPopover.classList.toggle('open');
+      });
+      fontPopover.querySelectorAll('button[data-size]').forEach(sBtn=>{
+        sBtn.addEventListener('click', e=>{
+          e.stopPropagation();
+          b.fontSize = +sBtn.dataset.size;
+          applyCvFontSize(el, b);
+          fontPopover.classList.remove('open');
+          persist();
+          redrawArrows();
+          growBoardToFit();
+        });
+      });
+
+      const contentEl = el.querySelector('.cv-content');
+      dragHandle.addEventListener('dblclick', e=>{
+        if(!document.body.classList.contains('admin') || arrowLinkMode) return;
+        e.stopPropagation();
+        contentEl.contentEditable = 'true';
+        el.classList.add('editing');
+        contentEl.focus();
+      });
+      /* Cmd/Ctrl+A у вкладеному contenteditable="true" (усередині contenteditable="false"
+         усередині contenteditable="true" самої статті) в Chrome НЕ обмежується цим
+         вкладеним "острівцем" — виділяє весь текст статті (rte), і наступний друк/Backspace
+         замінив/стер би реальний текст статті. Перехоплюємо і виділяємо вручну лише вміст
+         цього блока. */
+      contentEl.addEventListener('keydown', e=>{
+        if((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='a'){
+          e.preventDefault();
+          e.stopPropagation();
+          const range = document.createRange();
+          range.selectNodeContents(contentEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      });
+      contentEl.addEventListener('blur', ()=>{
+        contentEl.contentEditable = 'false';
+        el.classList.remove('editing');
+        b.content = contentEl.innerHTML;
+        persist();
+        redrawArrows();
+        growBoardToFit();
+      });
+    }
+  }
+
+  function addBlock(b){
+    b.id = uid('cv-');
+    blocks.push(b);
+    if(b.type === 'arrow'){ redrawArrows(); } else { mountBlock(b); growBoardToFit(); }
+    persist();
+  }
+
+  blocks.forEach(b=>{ if(b.type!=='arrow') mountBlock(b); });
   redrawArrows();
+  growBoardToFit();
 
-  document.getElementById('cvAddText').addEventListener('click', ()=>{
-    addCanvasBlock({type:'text', x:60,y:60,w:220,h:80,content:'Новий текст…'});
+  /* невеликий каскад зсуву для нових блоків, щоб вони не сипались один на одного в кутку */
+  let addCount = 0;
+  function cascadeXY(){ const n = (addCount++ % 6) * 22; return {x:20+n, y:20+n}; }
+
+  wrap.querySelector('[data-act="text"]').addEventListener('click', ()=>{
+    const p = cascadeXY();
+    addBlock({type:'text', x:p.x, y:p.y, w:200, h:50, content:'Новий текст…'});
   });
-  document.getElementById('cvAddRect').addEventListener('click', ()=>{
-    addCanvasBlock({type:'rect', x:120,y:120,w:260,h:140,content:'Заголовок блоку'});
+  wrap.querySelector('[data-act="rect"]').addEventListener('click', ()=>{
+    const p = cascadeXY();
+    addBlock({type:'rect', x:p.x, y:p.y, w:240, h:90, content:'Заголовок блоку'});
   });
-  document.getElementById('cvAddImg').addEventListener('click', ()=>{
-    document.getElementById('cvImgInput').click();
+  wrap.querySelector('[data-act="img"]').addEventListener('click', ()=>{
+    wrap.querySelector('[data-role="imgInput"]').click();
   });
-  document.getElementById('cvAddArrow').addEventListener('click', ()=>{
-    if(ARROW_LINK_MODE){ exitArrowLinkMode(); return; }
-    ARROW_LINK_MODE = true;
-    ARROW_LINK_FIRST = null;
-    const btn = document.getElementById('cvAddArrow');
-    btn.textContent = 'Обери перший блок…';
-    btn.classList.add('linking');
-  });
-  document.getElementById('cvImgInput').addEventListener('change', (e)=>{
+  wrap.querySelector('[data-role="imgInput"]').addEventListener('change', (e)=>{
     const file = e.target.files[0];
     if(!file) return;
     const reader = new FileReader();
     reader.onload = ()=>{
-      addCanvasBlock({type:'img', x:80,y:80,w:280,h:180,content:reader.result});
+      const p = cascadeXY();
+      addBlock({type:'img', x:p.x, y:p.y, w:220, h:150, content:reader.result});
     };
     reader.readAsDataURL(file);
     e.target.value='';
   });
-  document.getElementById('cvSave').addEventListener('click', async ()=>{
-    await saveCanvasData();
-    cvSavedSnapshot = JSON.stringify(CANVAS_BLOCKS);
-    const toast = document.getElementById('toast');
-    toast.textContent = '✓ Полотно збережено';
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'), 2000);
-  });
-}
-
-function addCanvasBlock(b){
-  b.id = uid('cv-');
-  CANVAS_BLOCKS.push(b);
-  if(b.type === 'arrow'){ redrawArrows(); } else { mountCanvasBlock(b); }
-}
-
-function applyCvBlockColor(el, b){
-  if(b.type==='img' || !b.color) return;
-  el.style.background = cvHexToRgba(b.color, .14);
-  el.style.borderColor = cvHexToRgba(b.color, .45);
-}
-function applyCvTextColor(el, b){
-  const contentEl = el.querySelector('.cv-content');
-  if(contentEl) contentEl.style.color = b.textColor || '';
-}
-function closeAllCvPopovers(except){
-  document.querySelectorAll('.cv-color-popover.open, .cv-textcolor-popover.open').forEach(p=>{ if(p!==except) p.classList.remove('open'); });
-}
-
-function mountCanvasBlock(b){
-  const inner = document.getElementById('cvInner');
-  if(!inner) return;
-  const el = document.createElement('div');
-  el.className = 'cv-block ' + (b.type==='text'?'cv-text':b.type==='rect'?'cv-rect':'cv-img');
-  el.style.left = b.x+'px'; el.style.top = b.y+'px'; el.style.width = b.w+'px'; el.style.height = b.h+'px';
-  el.dataset.id = b.id;
-
-  const contentHtml = b.type==='img'
-    ? `<img src="${b.content}">`
-    : `<div class="cv-content" contenteditable="false">${b.content}</div>`;
-
-  el.innerHTML = `
-    <div class="cv-clip">
-      <div class="cv-drag"></div>
-      ${contentHtml}
-    </div>
-    <span class="cv-del admin-only">×</span>
-    <span class="cv-resize admin-only"></span>
-    ${b.type!=='img' ? `
-    <span class="cv-color-btn admin-only" title="Колір фону">🎨</span>
-    <div class="cv-color-popover">${CV_SWATCHES.map(c=>`<span class="cv-swatch" data-c="${c}" style="background:${c}"></span>`).join('')}</div>
-    <span class="cv-textcolor-btn admin-only" title="Колір тексту">A</span>
-    <div class="cv-textcolor-popover">${CV_SWATCHES.map(c=>`<span class="cv-swatch" data-c="${c}" style="background:${c}"></span>`).join('')}</div>` : ''}
-  `;
-  inner.appendChild(el);
-  applyCvBlockColor(el, b);
-  applyCvTextColor(el, b);
-
-  // drag (або, в режимі зʼєднання стрілкою — вибір блока замість перетягування)
-  const dragHandle = el.querySelector('.cv-drag');
-  dragHandle.addEventListener('mousedown', e=>{
-    if(!document.body.classList.contains('admin')) return;
-    e.preventDefault();
-    if(ARROW_LINK_MODE){
-      if(!ARROW_LINK_FIRST){
-        ARROW_LINK_FIRST = b.id;
-        el.classList.add('link-selected');
-        document.getElementById('cvAddArrow').textContent = 'Обери другий блок…';
-        return;
-      }
-      if(ARROW_LINK_FIRST === b.id){ exitArrowLinkMode(); return; }
-      addCanvasBlock({type:'arrow', from:ARROW_LINK_FIRST, to:b.id, color:'#b26bff'});
-      exitArrowLinkMode();
+  wrap.querySelector('[data-act="arrow"]').addEventListener('click', ()=>{
+    if(arrowLinkMode){ exitArrowLinkMode(); return; }
+    if(blocks.filter(x=>x.type!=='arrow').length < 2){
+      const toast = document.getElementById('toast');
+      toast.textContent = 'Спершу додайте хоча б два блоки, щоб їх з’єднати стрілкою';
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 2200);
       return;
     }
-    const startX=e.clientX, startY=e.clientY, startL=el.offsetLeft, startT=el.offsetTop;
-    function onMove(ev){
-      const nx = startL + (ev.clientX-startX), ny = startT + (ev.clientY-startY);
-      el.style.left = Math.max(0,nx)+'px'; el.style.top = Math.max(0,ny)+'px';
-      b.x = el.offsetLeft; b.y = el.offsetTop;
-      redrawArrows();
-    }
-    function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    arrowLinkMode = true;
+    arrowLinkFirst = null;
+    const btn = wrap.querySelector('[data-act="arrow"]');
+    btn.textContent = 'Обери перший блок…';
+    btn.classList.add('linking');
   });
-
-  // resize
-  const resizeHandle = el.querySelector('.cv-resize');
-  resizeHandle.addEventListener('mousedown', e=>{
-    e.preventDefault(); e.stopPropagation();
-    const startX=e.clientX, startY=e.clientY, startW=el.offsetWidth, startH=el.offsetHeight;
-    function onMove(ev){
-      const nw = Math.max(60, startW+(ev.clientX-startX)), nh = Math.max(40, startH+(ev.clientY-startY));
-      el.style.width = nw+'px'; el.style.height = nh+'px';
-      b.w = nw; b.h = nh;
-      redrawArrows();
-    }
-    function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+  wrap.querySelector('[data-act="del"]').addEventListener('click', ()=>{
+    if(!confirm('Видалити цю схему повністю?')) return;
+    wrap.remove();
   });
-
-  // delete (разом зі стрілками, що були прикріплені до цього блока)
-  el.querySelector('.cv-del').addEventListener('click', ()=>{
-    CANVAS_BLOCKS = CANVAS_BLOCKS.filter(x=>x.id!==b.id && !(x.type==='arrow' && (x.from===b.id || x.to===b.id)));
-    el.remove();
-    redrawArrows();
-  });
-
-  // колір фону та колір тексту блока
-  if(b.type!=='img'){
-    const colorBtn = el.querySelector('.cv-color-btn');
-    const popover = el.querySelector('.cv-color-popover');
-    colorBtn.addEventListener('click', e=>{
-      e.stopPropagation();
-      closeAllCvPopovers(popover);
-      popover.classList.toggle('open');
-    });
-    popover.querySelectorAll('.cv-swatch').forEach(sw=>{
-      sw.addEventListener('click', e=>{
-        e.stopPropagation();
-        b.color = sw.dataset.c;
-        applyCvBlockColor(el, b);
-        popover.classList.remove('open');
-      });
-    });
-
-    const textColorBtn = el.querySelector('.cv-textcolor-btn');
-    const textPopover = el.querySelector('.cv-textcolor-popover');
-    textColorBtn.addEventListener('click', e=>{
-      e.stopPropagation();
-      closeAllCvPopovers(textPopover);
-      textPopover.classList.toggle('open');
-    });
-    textPopover.querySelectorAll('.cv-swatch').forEach(sw=>{
-      sw.addEventListener('click', e=>{
-        e.stopPropagation();
-        b.textColor = sw.dataset.c;
-        applyCvTextColor(el, b);
-        textPopover.classList.remove('open');
-      });
-    });
-  }
-
-  // inline edit for text/rect
-  if(b.type!=='img'){
-    const contentEl = el.querySelector('.cv-content');
-    /* .cv-content має pointer-events:none, поки не редагується — тому dblclick реально
-       ловить .cv-drag (шар над ним), а не сам .cv-content; раніше слухач висів не на тому
-       елементі й подвійний клік для редагування взагалі не спрацьовував */
-    dragHandle.addEventListener('dblclick', e=>{
-      if(!document.body.classList.contains('admin') || ARROW_LINK_MODE) return;
-      e.stopPropagation();
-      contentEl.contentEditable = 'true';
-      el.classList.add('editing');
-      contentEl.focus();
-    });
-    contentEl.addEventListener('blur', ()=>{
-      contentEl.contentEditable = 'false';
-      el.classList.remove('editing');
-      b.content = contentEl.innerHTML;
-    });
-  }
 }
 
-// click-through for embedded canvas buttons inside published articles
-document.getElementById('main').addEventListener('click', (e)=>{
-  const btn = e.target.closest('.embed-canvas-btn');
-  if(btn){ render('canvas:' + btn.dataset.cid); }
-});
+/* ---- старі схеми, вставлені в статті ДО переходу на inline-конструктор (2026-09-24) ----
+   HTML таких схем уже "запечений" як статичний знімок прямо в article.body — рендериться
+   й без жодного JS, лишається тільки підключити кнопку видалення (та сама, що для картинок) */
+function attachCvEmbedDelete(wrap){
+  const btn = wrap.querySelector('.cv-embed-del');
+  if(btn) btn.addEventListener('click', ()=>wrap.remove());
+}
 
 /* ---------------- NAV + ROLE ---------------- */
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=>render(item.dataset.view));
 });
 
-/* згортання бокової панелі — суто UI-перевага, запамʼятовується локально в браузері */
-if(localStorage.getItem('kbNavCollapsed') === '1') document.body.classList.add('nav-collapsed');
+/* згортання бокової панелі — суто UI-перевага, запамʼятовується локально в браузері.
+   За замовчуванням (поки не збережено явного вибору) панель ЗГОРНУТА — це дає більше
+   місця під текст статті; розгорнути можна і кнопкою ☰, і кліком по самій тонкій смужці. */
+if(localStorage.getItem('kbNavCollapsed') !== '0') document.body.classList.add('nav-collapsed');
 document.getElementById('navCollapseBtn').addEventListener('click', ()=>{
   const collapsed = document.body.classList.toggle('nav-collapsed');
   localStorage.setItem('kbNavCollapsed', collapsed ? '1' : '0');
+});
+document.querySelector('.layout > nav').addEventListener('click', ()=>{
+  if(document.body.classList.contains('nav-collapsed')){
+    document.body.classList.remove('nav-collapsed');
+    localStorage.setItem('kbNavCollapsed', '0');
+  }
 });
 
 /* ---- вхідний екран: Агент / Адмін (пароль на адмін-режим) ----
@@ -3079,9 +3599,16 @@ function closeGate(){
   gateChoice.style.display = 'block';
 }
 
-document.getElementById('gateAgentBtn').addEventListener('click', ()=>{
+document.getElementById('gateAgentBtn').addEventListener('click', async ()=>{
   setRole(false);
+  /* реєстрація/вхід одразу тут, ще до того як гейт закриється — getAgentProfile сама
+     тихо "підхопить" кабінет, якщо він уже є в цьому браузері (localStorage), або
+     покаже форму створення профілю (аватар+нік+пошта, вона малюється поверх гейта,
+     той самий z-index, але пізніше в DOM — тому й вище). Після цього агент завжди
+     потрапляє одразу на свій профіль "Моє", а не на випадковий стартовий екран. */
+  const profile = await getAgentProfile();
   closeGate();
+  render(profile ? 'mine' : 'assistant');
 });
 document.getElementById('gateAdminBtn').addEventListener('click', ()=>{
   if(isAdminUnlocked()){ setRole(true); closeGate(); return; }
@@ -3119,17 +3646,54 @@ document.getElementById('btnLight').addEventListener('click', ()=>{
   document.getElementById('btnDark').classList.remove('active');
 });
 
+/* поки триває пошук — тимчасово розгортаємо всі згорнуті підсторінки,
+   інакше збіг усередині згорнутої гілки просто не має свого DOM-рядка й "губиться" */
+let NAV_COLLAPSED_BEFORE_SEARCH = null;
 document.getElementById('searchInput').addEventListener('input', (e)=>{
   const q = e.target.value.toLowerCase().trim();
+
+  if(q && NAV_COLLAPSED.size){
+    if(NAV_COLLAPSED_BEFORE_SEARCH===null) NAV_COLLAPSED_BEFORE_SEARCH = new Set(NAV_COLLAPSED);
+    NAV_COLLAPSED.clear();
+    renderAdminNav();
+  } else if(!q && NAV_COLLAPSED_BEFORE_SEARCH!==null){
+    NAV_COLLAPSED = NAV_COLLAPSED_BEFORE_SEARCH;
+    NAV_COLLAPSED_BEFORE_SEARCH = null;
+    renderAdminNav();
+    return; /* renderAdminNav уже перемалював список без фільтра пошуку */
+  }
+
   document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
-    if(!q){ item.style.display='flex'; return; }
-    item.style.display = item.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    const existingSnippet = item.nextElementSibling && item.nextElementSibling.classList.contains('nav-search-snippet')
+      ? item.nextElementSibling : null;
+    if(!q){
+      item.style.display='flex';
+      if(existingSnippet) existingSnippet.remove();
+      return;
+    }
+    const article = ADMIN_ARTICLES.find(a=>a.id===item.dataset.view);
+    const titleMatch = item.textContent.toLowerCase().includes(q);
+    const bodyText = article ? stripHtml(article.body).toLowerCase() : '';
+    const bodyMatch = bodyText.includes(q);
+    item.style.display = (titleMatch || bodyMatch) ? 'flex' : 'none';
+    /* сніпет показуємо лише коли збіг ЛИШЕ в тексті статті (не в заголовку) —
+       саме тоді незрозуміло без нього, чому ця стаття знайшлась */
+    if(bodyMatch && !titleMatch && article){
+      const html = makeSearchSnippet(article, q);
+      const snip = existingSnippet || document.createElement('div');
+      snip.className = 'nav-search-snippet';
+      snip.innerHTML = html;
+      snip.style.paddingLeft = ((parseFloat(item.style.paddingLeft) || 14) + 18) + 'px';
+      if(!existingSnippet) item.after(snip);
+    } else if(existingSnippet){
+      existingSnippet.remove();
+    }
   });
 });
 
 loadAdminArticles()
   .then(()=>seedBuiltinArticles())
-  .then(()=>{ renderAdminNav(); return loadCanvasList(); })
+  .then(()=>{ renderAdminNav(); })
   .then(()=>loadScenarioList())
   .then(()=>seedBaggageScenario())
   .then(()=>render('assistant'));
