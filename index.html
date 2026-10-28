@@ -32,6 +32,16 @@
     --radius-sm:10px;
   }
   *{box-sizing:border-box;}
+  /* ---- косметика: легкі анімації появи контенту (власник-фідбек 27.10 — "зроби повну
+     косметику, якісь візуальні анімації"). Застосовуються через клас на елементах, які
+     innerHTML-рендер пересоздає заново щоразу — тож анімація коректно переграється
+     при кожній навігації, без жодних правок у JS. ---- */
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes popIn{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(227,92,125,.45);}50%{box-shadow:0 0 0 5px rgba(227,92,125,0);}}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+  }
   body{
     margin:0;color:var(--text);font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;
     background:
@@ -42,6 +52,18 @@
     background-attachment:fixed;
     min-height:100vh;
   }
+  /* фірмовий водяний знак "TTN" на фоні сторінки — див. #ttnWatermark (inline SVG
+     одразу після відкриття <body>). Техніка — класичний Photoshop-"bevel/emboss":
+     feDiffuseLighting рахує rel'єф у СІРОМУ (плоска частина літери виходить
+     рівно 50% сірим при diffuseConstant=1 і elevation=30°, sin(30°)=.5), а сам
+     елемент накладається на сторінку через mix-blend-mode:overlay — для якого
+     50% сірий є нейтральним (нічого не змінює), тож плоска "начинка" літер
+     зливається з тим самим фоном сторінки (той самий колір/градієнт), і видно
+     лишається тільки тонку тінь/відблиск на самому краю — де вигнутий після
+     feGaussianBlur альфа-рельєф відхиляється від 50%. Саме так власниця просила:
+     "текст у тій же структурі й кольорах, що фон, видно тільки тінь, бо вдавлений"
+     (попередня версія з кольоровою заливкою+specular виглядала "дутою") */
+  #ttnWatermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:66vw;max-width:1100px;height:auto;pointer-events:none;z-index:-1;mix-blend-mode:overlay;opacity:.9;}
   .mono{font-family:'JetBrains Mono',monospace;}
   ::selection{background:var(--violet);color:#0a0510;}
   h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
@@ -64,6 +86,65 @@
     -webkit-backdrop-filter:blur(24px) saturate(160%);
     border-bottom:1px solid rgba(255,255,255,.07);
   }
+  .header-row1{display:flex;align-items:center;gap:22px;flex:1;min-width:0;}
+  /* Головна/AI-асистент/Тести/Моє — компактні, явно клікабельні кнопки збоку від лого
+     (не окремий рядок — щоб шапка не ставала вищою; owner-фідбек 27.10: без іконок,
+     крупніше і щоб виглядали саме як кнопки, а не як текстові посилання) */
+  .top-nav{display:flex;gap:6px;flex:none;}
+  .top-nav .nav-item{
+    margin:0;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;
+    white-space:nowrap;background:var(--glass);border:1px solid var(--glass-border);color:var(--text);
+  }
+  .top-nav .nav-item:hover{border-color:rgba(124,163,222,.4);background:var(--glass-strong);}
+  .top-nav .nav-item.active{
+    background:linear-gradient(135deg,var(--violet),var(--cyan));border-color:transparent;color:#fff;
+    box-shadow:0 0 14px rgba(124,163,222,.25);
+  }
+  /* ---- сповіщення: нова стаття в розділі → дзвіночок у шапці, кожен агент сам
+     позначає прочитане/непрочитане (owner-фідбек 27.10) ---- */
+  .notif-wrap{position:relative;}
+  .notif-bell{
+    position:relative;width:38px;height:38px;border-radius:10px;flex:none;
+    background:var(--glass);border:1px solid var(--glass-border);font-size:17px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;
+  }
+  .notif-bell:hover{background:var(--glass-strong);transform:translateY(-1px);}
+  .notif-badge{
+    position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 3px;border-radius:999px;
+    background:var(--red,#e35c7d);color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center;
+    animation:popIn .25s ease both, pulseGlow 2.2s ease-in-out .3s infinite;
+  }
+  .notif-dropdown{
+    display:none;position:absolute;right:0;top:calc(100% + 10px);width:340px;max-width:calc(100vw - 48px);
+    max-height:440px;background:var(--bg-1,#14101c);border:1px solid var(--glass-border);border-radius:14px;
+    box-shadow:0 20px 50px rgba(0,0,0,.4);overflow:hidden;z-index:45;flex-direction:column;
+  }
+  .notif-dropdown.open{display:flex;}
+  .notif-dropdown-head{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;
+    border-bottom:1px solid var(--glass-border);font-weight:600;font-size:13px;flex:none;
+  }
+  .notif-dropdown-head button{background:none;border:none;color:var(--cyan);font-size:11px;cursor:pointer;white-space:nowrap;}
+  .notif-dropdown-head button:hover{text-decoration:underline;}
+  .notif-list{overflow-y:auto;}
+  .notif-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;}
+  .notif-item{
+    display:flex;align-items:flex-start;gap:10px;padding:12px 14px;cursor:pointer;
+    border-bottom:1px solid rgba(255,255,255,.04);transition:.15s;
+  }
+  .notif-item:hover{background:var(--glass);}
+  .notif-item:last-child{border-bottom:none;}
+  .notif-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);flex:none;margin-top:6px;}
+  .notif-item.read .notif-dot{background:transparent;border:1px solid var(--glass-border);}
+  .notif-item-body{flex:1;min-width:0;}
+  .notif-item-title{font-size:13px;font-weight:600;}
+  .notif-item.read .notif-item-title{font-weight:500;color:var(--muted);}
+  .notif-item-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+  .notif-toggle-read{
+    flex:none;background:none;border:1px solid var(--glass-border);border-radius:6px;color:var(--muted);
+    width:24px;height:24px;cursor:pointer;font-size:12px;
+  }
+  .notif-toggle-read:hover{color:var(--text);border-color:var(--cyan);}
   .brand{display:flex;align-items:baseline;gap:11px;}
   .brand .tag{
     font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-.3px;
@@ -105,9 +186,15 @@
   #navCollapseBtn:hover{border-color:var(--violet);color:#fff;}
   .nav-group{margin-bottom:6px;}
   .nav-heading{
-    padding:12px 22px 7px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:1.5px;
-    color:var(--muted);text-transform:uppercase;opacity:.75;
+    padding:11px 16px;margin:0 10px;font-family:'Space Grotesk',sans-serif;font-size:12.5px;letter-spacing:.4px;
+    color:var(--text);text-transform:uppercase;font-weight:700;
+    display:flex;align-items:center;gap:7px;cursor:pointer;border-radius:10px;transition:.15s;
   }
+  .nav-heading:hover{background:rgba(255,255,255,.05);}
+  body.light .nav-heading:hover{background:rgba(30,20,50,.04);}
+  .nav-heading .nav-heading-arrow{font-size:10px;color:var(--muted);flex:none;width:10px;}
+  .nav-heading.expanded{color:#fff;}
+  body.light .nav-heading.expanded{color:#1c1428;}
   .nav-item{
     display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 10px;
     padding:10px 14px;cursor:pointer;color:#c9c2e0;font-size:13.5px;border-radius:10px;
@@ -165,6 +252,7 @@
     background:var(--glass);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);
     border:1px solid var(--glass-border);border-radius:var(--radius);
     box-shadow:0 8px 32px rgba(0,0,0,.35);
+    animation:fadeInUp .3s ease both;
   }
   /* картинки з перенесеного контенту вставлені як голі <img> (без .rte-img-wrap, який має
      власний max-width лише для картинок, вставлених через сам редактор) — без цього правила
@@ -197,7 +285,7 @@
 
   /* ---- assistant chat ---- */
   .chat{display:flex;flex-direction:column;gap:16px;}
-  .bubble{max-width:660px;padding:15px 18px;border-radius:16px;font-size:14px;}
+  .bubble{max-width:660px;padding:15px 18px;border-radius:16px;font-size:14px;animation:popIn .25s ease both;}
   .bubble.agent{
     align-self:flex-end;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
     border-bottom-right-radius:4px;
@@ -263,12 +351,17 @@
   .modal textarea{min-height:96px;resize:vertical;}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;}
   .btn{padding:10px 18px;border-radius:999px;font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;
-    border:1px solid var(--glass-border);background:rgba(255,255,255,.04);color:var(--muted);}
+    border:1px solid var(--glass-border);background:rgba(255,255,255,.04);color:var(--muted);
+    transition:transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease;}
   .btn.primary{
     background:linear-gradient(135deg,var(--violet),var(--violet-glow));border-color:transparent;color:#fff;
     box-shadow:0 0 11px rgba(124,163,222,0.165);
   }
-  .btn:hover{color:#fff;}
+  .btn:hover{color:#fff;border-color:var(--glass-strong);background:rgba(255,255,255,.08);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.22);}
+  .btn.primary:hover{box-shadow:0 4px 18px rgba(124,163,222,0.32);filter:brightness(1.07);border-color:transparent;}
+  .btn:active{transform:translateY(0) scale(.97);box-shadow:none;transition-duration:.05s;}
+  .btn:focus-visible{outline:2px solid var(--violet);outline-offset:2px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none !important;box-shadow:none !important;}
   .save-toast{
     position:fixed;bottom:26px;right:26px;
     background:rgba(18,14,30,.85);backdrop-filter:blur(20px);border:1px solid rgba(62,203,152,0.3);
@@ -332,6 +425,20 @@
   }
   .avatar-pick:hover{transform:scale(1.08);}
   .avatar-pick.selected{border-color:#fff;box-shadow:0 0 0 2px rgba(124,163,222,0.375),0 0 12px rgba(124,163,222,0.45);}
+  /* ---- тести-посилання (адмін кидає зовнішнє посилання з емодзі й назвою) ---- */
+  .link-test-emoji-pick{
+    width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-size:18px;cursor:pointer;border:2px solid var(--glass-border);background:var(--glass);transition:.15s;
+  }
+  .link-test-emoji-pick:hover{transform:scale(1.08);}
+  .link-test-emoji-pick.selected{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(111,194,184,0.3);}
+  .link-test-del{
+    position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;
+    background:rgba(227,92,125,.15);color:var(--red,#e35c7d);cursor:pointer;opacity:0;transition:.15s;
+  }
+  .canvas-card:hover .link-test-del{opacity:1;}
+  .link-test-del:hover{background:rgba(227,92,125,.3);}
   .profile-avatar{
     display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;
     border-radius:50%;font-size:20px;margin-right:10px;vertical-align:middle;
@@ -371,6 +478,8 @@
     text-decoration:none;transition:.15s;
   }
   .quick-links a:hover{border-color:var(--violet);background:var(--glass-strong);transform:translateY(-1px);}
+  .quick-links a img, .quick-links a svg{width:20px;height:20px;flex:none;margin-right:8px;object-fit:contain;}
+  .quick-links a img{border-radius:4px;background:#fff;padding:2px;}
   .rte ul{padding-left:20px;}
   .rte p{margin:0 0 10px;}
   .rte-img-wrap{
@@ -535,11 +644,23 @@
   }
   .cc-child-btn:hover{border-color:var(--violet);color:var(--text);background:var(--glass-strong);}
   .canvas-card{
-    padding:18px;border-radius:var(--radius);background:var(--glass);border:1px solid var(--glass-border);
-    cursor:pointer;transition:.2s;
+    position:relative;padding:18px;border-radius:var(--radius);background:var(--glass);border:1px solid var(--glass-border);
+    cursor:pointer;transition:transform .2s, border-color .2s, background-color .2s, box-shadow .2s;
+    animation:fadeInUp .3s ease both;
   }
-  .canvas-card:hover{border-color:rgba(124,163,222,.4);background:var(--glass-strong);transform:translateY(-1px);}
-  .canvas-card .cc-icon{font-size:22px;margin-bottom:8px;}
+  .canvas-card:hover{border-color:rgba(124,163,222,.4);background:var(--glass-strong);transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.28);}
+  .canvas-card:active{transform:translateY(-1px) scale(.99);}
+  /* легкий каскад появи для перших карток у сітці розділів — тільки для перших N,
+     далі анімацію не продовжуємо, щоб не затримувати відображення великих списків */
+  .canvas-card-grid .canvas-card:nth-child(1){animation-delay:.02s;}
+  .canvas-card-grid .canvas-card:nth-child(2){animation-delay:.06s;}
+  .canvas-card-grid .canvas-card:nth-child(3){animation-delay:.1s;}
+  .canvas-card-grid .canvas-card:nth-child(4){animation-delay:.14s;}
+  .canvas-card-grid .canvas-card:nth-child(5){animation-delay:.18s;}
+  .canvas-card-grid .canvas-card:nth-child(6){animation-delay:.22s;}
+  .canvas-card-grid .canvas-card:nth-child(n+7){animation-delay:.25s;}
+  .canvas-card .cc-icon{font-size:22px;margin-bottom:8px;transition:transform .2s;}
+  .canvas-card:hover .cc-icon{transform:scale(1.12);}
   .canvas-card .cc-title{font-weight:600;font-size:14px;color:#fff;}
   .canvas-card .cc-meta{font-size:11.5px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;}
   /* ---- "🏠 Головна": пошук + картки розділів ---- */
@@ -551,10 +672,20 @@
     background:var(--glass);border:1px solid var(--glass-border);color:var(--text);
   }
   .home-search:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,163,222,.15);}
+  .home-chat-link{display:inline-flex;align-items:center;gap:7px;margin-top:16px;text-decoration:none;}
   .home-grid{max-width:920px;margin:0 auto;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));}
   .home-card{padding:22px 20px;}
   .home-card .cc-icon{font-size:28px;}
   .home-card .cc-title{font-size:15px;}
+  /* ---- міні-гра на головній (як динозавр Chrome без інтернету) — owner-фідбек 27.10,
+     "щоб було чим зайнятись поки чекаєш дзвінка" ---- */
+  .dino-game-wrap{max-width:480px;margin:36px auto 0;text-align:center;}
+  .dino-game-hint{font-size:11.5px;color:var(--muted);margin-bottom:8px;font-family:'JetBrains Mono',monospace;}
+  #agentDinoCanvas{
+    width:100%;max-width:480px;aspect-ratio:480/150;border-radius:10px;border:1px solid var(--glass-border);
+    cursor:pointer;image-rendering:pixelated;outline:none;
+  }
+  #agentDinoCanvas:focus{border-color:var(--cyan);}
   /* реальний видимий блок (не просто трохи більший відступ) — легка підложка й рамка
      навколо кожної групи з кількох карток, щоб групи читались як окремі "острівці" */
   .section-block-wrap{margin-bottom:24px;}
@@ -584,10 +715,40 @@
   .new-canvas-row{display:flex;gap:10px;margin-top:16px;}
   .new-canvas-row input{flex:1;}
   .back-link{
-    display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-family:'JetBrains Mono',monospace;
-    font-size:12px;cursor:pointer;margin-bottom:14px;
+    display:inline-flex;align-items:center;gap:6px;color:var(--text);font-family:'Space Grotesk',sans-serif;
+    font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px;
+    background:var(--glass);border:1px solid var(--glass-border);border-radius:999px;
+    padding:7px 14px 7px 10px;backdrop-filter:blur(8px);transition:.15s;
   }
-  .back-link:hover{color:var(--cyan);}
+  .back-link:hover{color:#fff;border-color:var(--cyan);background:rgba(111,194,184,0.1);}
+  /* у світлій темі --glass майже прозорий (3.5%), на білому тлі кнопка зливалась з фоном —
+     тут колір непрозорий і трохи темніший за фон сторінки замість напівпрозорого шару */
+  body.light .back-link{background:#fff;border-color:rgba(30,20,50,.14);box-shadow:0 1px 4px rgba(30,20,50,.06);}
+  body.light .back-link:hover{color:#1c1428;border-color:var(--cyan);background:#fff;}
+
+  /* компактний вибір розділу перед AI-чатом — картки на всю ширину/висоту (.canvas-card
+     за замовчуванням) виглядали громіздко для простого списку з 5-6 пунктів, особливо
+     у вузькій бічній панелі (owner-фідбек 27.10) */
+  #aiSectionGrid{display:flex;flex-direction:column;gap:6px;margin-top:0;}
+  #aiSectionGrid .canvas-card{
+    display:flex;align-items:center;gap:10px;padding:10px 14px;
+  }
+  #aiSectionGrid .cc-icon{font-size:17px;margin-bottom:0;}
+  #aiSectionGrid .cc-title{font-size:13px;}
+  .ai-section-skip{
+    margin-top:14px;color:var(--muted);font-size:12.5px;cursor:pointer;display:inline-block;
+  }
+  .ai-section-skip:hover{color:var(--cyan);}
+  .ai-section-badge{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;
+    padding:9px 14px;margin-bottom:14px;font-size:13px;font-weight:600;
+  }
+  .ai-section-badge button{
+    background:none;border:none;color:var(--cyan);font-size:12px;font-weight:600;
+    cursor:pointer;white-space:nowrap;
+  }
+  .ai-section-badge button:hover{text-decoration:underline;}
 
   .new-section-row{display:none;margin-top:8px;}
   .new-section-row.open{display:block;}
@@ -655,6 +816,10 @@
 
   .related-link{padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--cyan);font-size:13.5px;transition:.15s;}
   .related-link:hover{background:rgba(111,194,184,0.06);}
+
+  .ai-sources{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .ai-source-link{color:var(--cyan);cursor:pointer;padding:3px 9px;border-radius:999px;background:rgba(111,194,184,0.08);border:1px solid rgba(111,194,184,0.18);transition:.15s;}
+  .ai-source-link:hover{background:rgba(111,194,184,0.18);}
   .related-pick-row{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:4px 0;}
 
   .btn.active-type{background:linear-gradient(135deg,var(--violet),var(--violet-glow));border-color:transparent;color:#fff;}
@@ -706,6 +871,14 @@
   body.light .rte-render h3{color:#1c1428;}
   body.light .rte:empty:before{color:var(--muted);}
   body.light .page-title-input{color:#161022;border-bottom-color:rgba(30,20,50,.15);}
+  /* AI-асистент (панель + fab) не мав світлих стилів узагалі — лишався темним поверх
+     світлої сторінки, тож текст (--text перевизначений на темний) читався на темному ж тлі */
+  body.light .assistant-panel{background:#fbfaff;border-left-color:rgba(30,20,50,.1);box-shadow:-12px 0 40px rgba(60,40,90,.12);}
+  body.light .assistant-panel-head{border-bottom-color:rgba(30,20,50,.08);}
+  body.light .assistant-panel-back,body.light .assistant-panel-close{color:var(--muted);}
+  body.light .assistant-panel-back:hover,body.light .assistant-panel-close:hover{color:#1c1428;}
+  body.light .assistant-fab-hint{background:rgba(255,255,255,.85);color:var(--text);box-shadow:0 4px 14px rgba(60,40,90,.14);}
+  body.light .bubble.bot{background:linear-gradient(160deg, rgba(61,111,184,0.06), rgba(44,143,131,0.03));border-color:rgba(61,111,184,0.16);}
 
   /* друк статті — лишаємо тільки заголовок і сам текст, без сайдбару/тулбарів/кнопок */
   @media print{
@@ -741,17 +914,25 @@
     box-shadow:0 8px 24px rgba(124,163,222,0.338);
   }
   .assistant-fab:hover{filter:brightness(1.08);}
+  /* справжнє плаваюче вікно міні-чату (як у Intercom/Crisp) — прив'язане до кутка
+     екрана з усіх боків, а не на всю висоту екрана (owner-фідбек 27.10: "щоб
+     виглядало дійсно як міні-чат") */
   .assistant-panel{
-    position:fixed;right:0;top:0;bottom:0;width:320px;max-width:92vw;z-index:41;
-    background:var(--bg-1,#14101c);border-left:1px solid var(--glass-border);
-    box-shadow:-12px 0 40px rgba(0,0,0,.4);
-    display:flex;flex-direction:column;
-    transform:translateX(100%);transition:transform .25s ease;
+    position:fixed;right:24px;bottom:24px;z-index:41;
+    width:380px;max-width:calc(100vw - 32px);
+    height:600px;max-height:calc(100vh - 110px);
+    background:var(--bg-1,#14101c);border:1px solid var(--glass-border);border-radius:18px;
+    box-shadow:0 24px 64px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.03);
+    display:flex;flex-direction:column;overflow:hidden;
+    opacity:0;transform:translateY(18px) scale(.96);pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
   }
-  body.assistant-open .assistant-panel{transform:translateX(0);}
+  body.assistant-open .assistant-panel{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+  body.light .assistant-panel{box-shadow:0 24px 64px rgba(60,40,90,.18), 0 0 0 1px rgba(30,20,50,.04);}
   .assistant-panel-head{
-    display:flex;align-items:center;gap:10px;padding:16px 18px;
+    display:flex;align-items:center;gap:10px;padding:14px 16px;
     border-bottom:1px solid var(--glass-border);font-weight:600;flex:none;
+    background:linear-gradient(135deg, rgba(124,163,222,.1), rgba(111,194,184,.05));
   }
   .assistant-panel-head > span{flex:1;}
   .assistant-panel-back, .assistant-panel-close{
@@ -769,7 +950,26 @@
 </head>
 <body>
 
+<!-- справжнє лого TTN (3 SVG-path, точно зняті з ttn.global — зірка в першій
+     "T" вже частина оригінального контуру, не намальована вручну) --><svg id="ttnWatermark" aria-hidden="true" viewBox="-4 -4 110 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="ttnCarve" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.9" result="blur"/>
+      <feDiffuseLighting in="blur" surfaceScale="-3" diffuseConstant="1" lighting-color="#ffffff" result="diff">
+        <feDistantLight azimuth="235" elevation="30"/>
+      </feDiffuseLighting>
+      <feComposite in="diff" in2="SourceAlpha" operator="in"/>
+    </filter>
+  </defs>
+  <g fill="#ffffff" filter="url(#ttnCarve)">
+    <path d="M31.6418 0.0935671H3.18218C2.47069 0.0935671 1.93707 0.467834 1.7592 1.1228L0.0694049 6.54967C-0.197404 7.2982 0.336215 8.04674 1.13664 8.04674H9.22985L10.5639 3.74267C10.6528 3.3684 11.1865 3.3684 11.2754 3.74267L12.6094 8.04674H16.9673C17.3231 8.04674 17.5009 8.51457 17.1452 8.70171L13.6767 11.4151L15.0107 15.7192C15.0996 16.0935 14.7439 16.3742 14.4771 16.187L11.0086 13.4736L6.56176 16.842V16.9356L2.38175 30.4092C2.11494 31.1577 2.64856 31.9063 3.44899 31.9063H12.7873C13.4099 31.9063 13.9435 31.532 14.1214 30.877L21.1473 7.95317H29.6852C30.3078 7.95317 30.8414 7.5789 31.0193 6.92394L32.709 1.49707C32.9759 0.748534 32.4422 0 31.6418 0"/>
+    <path d="M35.1105 8.04668C34.399 8.04668 33.8654 7.29814 34.0433 6.54961L35.7331 1.12274C35.9109 0.56134 36.4445 0.0935059 37.0671 0.0935059H65.5267C66.2382 0.0935059 66.7718 0.84204 66.594 1.59057L64.9042 7.01744C64.6374 7.57884 64.1038 8.04668 63.5701 8.04668H55.0322L48.0063 30.9705C47.8284 31.5319 47.2948 31.9998 46.6722 31.9998H37.3339C36.6224 31.9998 36.0888 31.2512 36.2667 30.5027L43.5595 8.04668"/>
+    <path d="M76.3195 15.9063H76.1417L71.6059 30.7835C71.517 30.9706 71.428 31.2513 71.2502 31.532C71.0723 31.8127 70.7165 31.9998 70.094 31.9998H60.9335C60.3999 31.9998 60.1331 31.9063 59.9552 31.6256C59.8663 31.4384 59.7774 31.1577 59.9552 30.7835L69.0267 1.30993C69.1157 1.02923 69.2936 0.748534 69.5604 0.467834C69.8272 0.2807 70.1829 0.0935671 70.7165 0.0935671H77.7425C78.5429 0.0935671 79.0766 0.187134 79.3434 0.374267C79.6102 0.561401 79.788 0.842101 79.9659 1.21637L83.0787 9.16954L85.6578 15.6256L85.8357 15.5321L90.1936 1.21637C90.2825 1.02923 90.4604 0.748534 90.6383 0.467834C90.8162 0.187133 91.1719 0 91.7945 0H101.044C101.577 0 101.844 0.0935673 101.933 0.374267C102.022 0.561401 102.022 0.842101 101.933 1.21637L92.8617 30.6899C92.7728 30.9706 92.5949 31.2513 92.3281 31.532C92.0613 31.7191 91.7055 31.9063 91.2608 31.9063H84.3238C83.6123 31.9063 83.0787 31.8127 82.7229 31.532C82.3672 31.2513 82.1004 30.9706 81.9225 30.5963L78.8987 22.9238L76.3195 15.9063Z"/>
+  </g>
+</svg>
+
 <header>
+ <div class="header-row1">
   <button id="navCollapseBtn" title="Показати/сховати бічну панель">☰</button>
   <div class="brand" id="brandHomeLink" title="На головну" style="cursor:pointer;align-items:center">
     <svg width="30" height="30" viewBox="0 0 64 64" style="flex:none">
@@ -787,11 +987,27 @@
       <circle cx="40" cy="29" r="2" fill="#F0C75E"/>
     </svg>
     <span class="tag">Довідник</span>
-    <span class="sub">для агентів · v0.1 прототип</span>
+  </div>
+  <div class="top-nav">
+    <div class="nav-item" data-view="home" id="navHome">Головна</div>
+    <div class="nav-item" data-view="tests" id="navTests">Тести</div>
+    <div class="nav-item" data-view="mine" id="navMine">Моє</div>
   </div>
   <div class="search">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-    <input id="searchInput" placeholder="Пошук по темах, відділах, ключових словах…" />
+    <input id="searchInput" type="search" autocomplete="off" name="kb-search-header" placeholder="Пошук по темах, відділах, ключових словах…" />
+  </div>
+  <div class="notif-wrap" id="notifWrap">
+    <button class="notif-bell" id="notifBellBtn" title="Сповіщення">
+      🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span>
+    </button>
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-dropdown-head">
+        <span>Сповіщення</span>
+        <button type="button" id="notifMarkAllBtn">Позначити всі прочитаними</button>
+      </div>
+      <div class="notif-list" id="notifList"></div>
+    </div>
   </div>
   <div class="role-toggle" id="themeToggle" style="margin-left:0">
     <button id="btnDark" class="active">🌙</button>
@@ -801,15 +1017,12 @@
     <button id="btnAgent" class="active">Агент</button>
     <button id="btnAdmin">Адмін</button>
   </div>
+ </div>
 </header>
 
 <div class="layout">
   <nav>
     <div class="nav-group">
-      <div class="nav-item" data-view="home" id="navHome">🏠 Головна</div>
-      <div class="nav-item" data-view="assistant" id="navAssistant">🤖 AI-асистент</div>
-      <div class="nav-item" data-view="tests" id="navTests">🧪 Тести</div>
-      <div class="nav-item" data-view="mine" id="navMine">⭐ Моє</div>
       <div class="nav-item admin-only" data-view="suggestions" id="navSuggestions">💬 Пропозиції</div>
       <div class="nav-item admin-only" data-view="quizResults" id="navQuizResults">📊 Результати тестів</div>
       <div class="nav-item admin-only" data-view="staleArticles" id="navStaleArticles">🕓 Давно не оновлювались</div>
@@ -1084,7 +1297,9 @@ function render(view){
      клік по дереву, а з пошуку/"Моє"/"Пов'язані статті") — розгортаємо її батьків, інакше
      рядок цієї статті в навігації просто не існує в DOM (і не підсвітиться, і її сусідів
      не побачити одразу). */
-  if(expandNavAncestorsOf(view)) renderAdminNav();
+  const groupChanged = setExpandedGroupFor(view);
+  const ancestorsChanged = expandNavAncestorsOf(view);
+  if(groupChanged || ancestorsChanged) renderAdminNav();
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
   const main = document.getElementById('main');
 
@@ -1154,9 +1369,123 @@ function render(view){
 }
 
 /* ---------------- ОКРЕМИЙ РОЗДІЛ "ТЕСТИ" — усі тести одним списком, без прив'язки до статті ---------------- */
+
+/* тести-посилання: адмін кидає пряме зовнішнє посилання (напр. форму навчання/оферту на
+   Netlify) + емодзі + назву — зберігається окремо від внутрішніх quiz-тестів articles.quiz,
+   бо це не питання з варіантами, а просто кнопка-перехід. Той самий паттерн зберігання,
+   що й SCENARIOS (ключ-префікс у kb_portal, JSON-документ на кожен запис). */
+let LINK_TESTS = [];
+const LINK_TEST_EMOJIS = ['📋','🎓','📝','✅','🔗','🎯','📄','🧾','📑','🎁','📢','🧩'];
+
+async function loadLinkTests(){
+  LINK_TESTS = [];
+  try{
+    const res = await window.storage.list('linktest:');
+    if(res && res.keys && res.keys.length){
+      for(const k of res.keys){
+        try{
+          const item = await window.storage.get(k);
+          if(item && item.value) LINK_TESTS.push(JSON.parse(item.value));
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+}
+
+async function saveLinkTest(test){
+  await window.storage.set('linktest:'+test.id, JSON.stringify(test));
+  const idx = LINK_TESTS.findIndex(t=>t.id===test.id);
+  if(idx>=0) LINK_TESTS[idx] = test; else LINK_TESTS.push(test);
+}
+
+async function deleteLinkTest(id){
+  await window.storage.delete('linktest:'+id);
+  LINK_TESTS = LINK_TESTS.filter(t=>t.id!==id);
+}
+
+function renderLinkTestsSection(){
+  const wrap = document.getElementById('linkTestsSection');
+  if(!wrap) return;
+  const isAdmin = document.body.classList.contains('admin');
+  let html = '';
+  if(LINK_TESTS.length){
+    html += `<div class="dept-tag" style="margin-bottom:10px">🔗 Посилання</div><div class="canvas-card-grid" id="linkTestsGrid" style="margin-bottom:28px"></div>`;
+  }
+  if(isAdmin){
+    html += `
+      <div class="admin-only" style="margin-bottom:28px">
+        <button class="btn" id="linkTestAddToggle">+ Додати тест-посилання</button>
+        <div class="new-section-row" id="linkTestAddRow">
+          <div class="card" style="margin-top:10px;max-width:420px">
+            <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase">Емодзі</label>
+            <div id="linkTestEmojiGrid" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+            <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase">Назва</label>
+            <input type="text" id="linkTestTitleInput" placeholder="напр. Навчання оферта" style="width:100%;margin-bottom:14px">
+            <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase">Посилання</label>
+            <input type="text" id="linkTestUrlInput" placeholder="https://..." style="width:100%;margin-bottom:14px">
+            <button class="btn primary" id="linkTestSaveBtn">💾 Зберегти</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  wrap.innerHTML = html;
+
+  if(LINK_TESTS.length){
+    const grid = document.getElementById('linkTestsGrid');
+    LINK_TESTS.forEach(t=>{
+      const card = document.createElement('div');
+      card.className = 'canvas-card';
+      card.innerHTML = `
+        ${isAdmin ? `<span class="link-test-del admin-only" title="Видалити">×</span>` : ''}
+        <div class="cc-icon">${escapeHtml(t.emoji||'🔗')}</div>
+        <div class="cc-title">${escapeHtml(t.title||'Без назви')}</div>
+        <div class="cc-meta">Відкрити ↗</div>
+      `;
+      card.addEventListener('click', e=>{
+        if(e.target.classList.contains('link-test-del')) return;
+        window.open(t.url, '_blank', 'noopener');
+      });
+      const delBtn = card.querySelector('.link-test-del');
+      if(delBtn) delBtn.addEventListener('click', async e=>{
+        e.stopPropagation();
+        if(!confirm(`Видалити тест-посилання "${t.title}"?`)) return;
+        await deleteLinkTest(t.id);
+        render('tests');
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  if(isAdmin){
+    let selectedEmoji = LINK_TEST_EMOJIS[0];
+    const emojiGrid = document.getElementById('linkTestEmojiGrid');
+    emojiGrid.innerHTML = LINK_TEST_EMOJIS.map(e=>`<span class="link-test-emoji-pick" data-emoji="${e}">${e}</span>`).join('');
+    emojiGrid.querySelectorAll('.link-test-emoji-pick').forEach(el=>{
+      if(el.dataset.emoji===selectedEmoji) el.classList.add('selected');
+      el.addEventListener('click', ()=>{
+        emojiGrid.querySelectorAll('.link-test-emoji-pick').forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedEmoji = el.dataset.emoji;
+      });
+    });
+    document.getElementById('linkTestAddToggle').addEventListener('click', ()=>{
+      document.getElementById('linkTestAddRow').classList.toggle('open');
+    });
+    document.getElementById('linkTestSaveBtn').addEventListener('click', async ()=>{
+      const title = document.getElementById('linkTestTitleInput').value.trim();
+      let url = document.getElementById('linkTestUrlInput').value.trim();
+      if(!title || !url){ alert('Вкажіть назву і посилання'); return; }
+      if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      await saveLinkTest({ id: uid('lt'), emoji: selectedEmoji, title, url, createdAt: new Date().toISOString() });
+      render('tests');
+    });
+  }
+}
+
 async function renderTestsSection(view){
   const main = document.getElementById('main');
   if(!ADMIN_ARTICLES.length) await loadAdminArticles();
+  await loadLinkTests();
   const testable = ADMIN_ARTICLES.filter(a => a.quiz && a.quiz.length);
 
   if(view === 'tests'){
@@ -1164,8 +1493,10 @@ async function renderTestsSection(view){
       <div class="crumb">Тести</div>
       <h1 class="title">Перевір себе</h1>
       <div class="dept-tag">Усі тести з бази знань в одному місці — можна проходити без прив'язки до статті</div>
-      ${testable.length ? `<div class="canvas-card-grid" id="testsGrid"></div>` : `<p style="color:var(--muted)">Поки що немає жодного тесту. Додай питання в редакторі будь-якої статті (кнопка "✎ Редагувати" → картка "🧪 Тест до статті").</p>`}
+      <div id="linkTestsSection"></div>
+      ${testable.length ? `<div class="canvas-card-grid" id="testsGrid"></div>` : (LINK_TESTS.length ? '' : `<p style="color:var(--muted)">Поки що немає жодного тесту. Додай питання в редакторі будь-якої статті (кнопка "✎ Редагувати" → картка "🧪 Тест до статті") або посилання кнопкою вище.</p>`)}
     `;
+    renderLinkTestsSection();
     const grid = document.getElementById('testsGrid');
     if(grid){
       testable.forEach(a=>{
@@ -1296,6 +1627,128 @@ async function loadAgentDoc(email){
 }
 async function saveAgentDoc(doc){
   try{ await window.storage.set(agentKey(doc.email), JSON.stringify(doc), true); }catch(e){}
+}
+
+/* ---- сповіщення: нова стаття в розділі → дзвіночок у шапці. Прочитане/непрочитане — ОКРЕМО
+   для кожного агента (пишеться в його ж agent-документ поруч із favorites/quizResults, той
+   самий паттерн, що вже є для "Улюблене"). Самі сповіщення — спільні на всіх, як SCENARIOS. ---- */
+let NOTIFICATIONS = [];
+
+async function loadNotifications(){
+  NOTIFICATIONS = [];
+  try{
+    const res = await window.storage.list('notif:');
+    if(res && res.keys && res.keys.length){
+      for(const k of res.keys){
+        try{
+          const item = await window.storage.get(k);
+          if(item && item.value) NOTIFICATIONS.push(JSON.parse(item.value));
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+  NOTIFICATIONS.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+async function createNotification(article){
+  const notif = {
+    id: uid('ntf'),
+    articleId: article.id,
+    title: article.title,
+    crumb: articleBreadcrumb(article) || article.crumb || '',
+    createdAt: new Date().toISOString(),
+  };
+  try{ await window.storage.set('notif:'+notif.id, JSON.stringify(notif), true); }catch(e){}
+  NOTIFICATIONS.unshift(notif);
+}
+
+async function getReadNotificationIds(){
+  const email = localStorage.getItem('kbAgentEmail');
+  if(!email) return new Set();
+  const doc = await loadAgentDoc(email);
+  return new Set(doc.readNotifications || []);
+}
+
+async function markNotificationRead(id){
+  const profile = await getAgentProfile();
+  if(!profile) return;
+  const doc = await loadAgentDoc(profile.email);
+  doc.readNotifications = doc.readNotifications || [];
+  if(!doc.readNotifications.includes(id)) doc.readNotifications.push(id);
+  await saveAgentDoc(doc);
+}
+
+async function markNotificationUnread(id){
+  const email = localStorage.getItem('kbAgentEmail');
+  if(!email) return;
+  const doc = await loadAgentDoc(email);
+  doc.readNotifications = (doc.readNotifications || []).filter(x=>x!==id);
+  await saveAgentDoc(doc);
+}
+
+function notifRelTime(iso){
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff/60000);
+  if(min < 1) return 'щойно';
+  if(min < 60) return min+' хв тому';
+  const hrs = Math.floor(min/60);
+  if(hrs < 24) return hrs+' год тому';
+  const days = Math.floor(hrs/24);
+  return days+' дн тому';
+}
+
+function updateNotifBadge(n){
+  const badge = document.getElementById('notifBadge');
+  if(!badge) return;
+  if(n > 0){ badge.textContent = n>9 ? '9+' : n; badge.style.display='flex'; }
+  else badge.style.display = 'none';
+}
+
+async function refreshNotifBadge(){
+  await loadNotifications();
+  const readSet = await getReadNotificationIds();
+  updateNotifBadge(NOTIFICATIONS.filter(n=>!readSet.has(n.id)).length);
+}
+
+async function renderNotifDropdown(){
+  const list = document.getElementById('notifList');
+  if(!list) return;
+  await loadNotifications();
+  const readSet = await getReadNotificationIds();
+  if(!NOTIFICATIONS.length){
+    list.innerHTML = '<div class="notif-empty">Поки що немає сповіщень — тут з’являться нові статті</div>';
+    updateNotifBadge(0);
+    return;
+  }
+  list.innerHTML = '';
+  let unread = 0;
+  NOTIFICATIONS.forEach(n=>{
+    const isRead = readSet.has(n.id);
+    if(!isRead) unread++;
+    const row = document.createElement('div');
+    row.className = 'notif-item' + (isRead ? ' read' : '');
+    row.innerHTML = `
+      <span class="notif-dot"></span>
+      <div class="notif-item-body">
+        <div class="notif-item-title">Нова стаття: ${escapeHtml(n.title)}</div>
+        <div class="notif-item-meta">${escapeHtml(cleanCrumb(n.crumb))} · ${notifRelTime(n.createdAt)}</div>
+      </div>
+      <button class="notif-toggle-read" title="${isRead?'Позначити непрочитаним':'Позначити прочитаним'}">${isRead?'↺':'✓'}</button>
+    `;
+    row.querySelector('.notif-item-body').addEventListener('click', async ()=>{
+      await markNotificationRead(n.id);
+      document.getElementById('notifDropdown').classList.remove('open');
+      refreshNotifBadge();
+      render(n.articleId);
+    });
+    row.querySelector('.notif-toggle-read').addEventListener('click', async e=>{
+      e.stopPropagation();
+      if(isRead) await markNotificationUnread(n.id); else await markNotificationRead(n.id);
+      renderNotifDropdown();
+    });
+    list.appendChild(row);
+  });
+  updateNotifBadge(unread);
 }
 async function recordQuizResult(article, score, total){
   /* адмін бачить результати тестів у "Результати тестів" — тому, на відміну від "Улюблене",
@@ -1647,6 +2100,7 @@ async function renderUsersAdmin(){
           if(item && item.value){
             const doc = JSON.parse(item.value);
             rows.push({
+              key: k,
               name: doc.name || '(без імені)',
               email: doc.email || k.replace('agent:',''),
               avatar: doc.avatar,
@@ -1668,7 +2122,7 @@ async function renderUsersAdmin(){
   wrap.innerHTML = `
     <div class="card">
       <table>
-        <tr><th>Агент</th><th>Пошта</th><th>Обране</th><th>Тестів пройдено</th></tr>
+        <tr><th>Агент</th><th>Пошта</th><th>Обране</th><th>Тестів пройдено</th><th></th></tr>
         ${rows.map(r=>{
           const av = avatarInfo(r.avatar);
           return `<tr>
@@ -1676,11 +2130,27 @@ async function renderUsersAdmin(){
             <td class="mono" style="font-size:12px;color:var(--muted)">${escapeHtml(r.email)}</td>
             <td>${r.favCount}</td>
             <td>${r.quizCount}</td>
+            <td style="text-align:right"><button class="btn btn-del user-del-btn" data-key="${escapeHtml(r.key)}" data-name="${escapeHtml(r.name)}" type="button" title="Видалити кабінет">🗑</button></td>
           </tr>`;
         }).join('')}
       </table>
     </div>
   `;
+  wrap.querySelectorAll('.user-del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const key = btn.dataset.key;
+      const name = btn.dataset.name;
+      if(!confirm(`Видалити особистий кабінет агента "${name}"? Нік, пошту, обране й результати тестів буде втрачено безповоротно.`)) return;
+      btn.disabled = true;
+      try{
+        await window.storage.delete(key);
+        renderUsersAdmin();
+      }catch(e){
+        alert('Не вдалося видалити: ' + (e.message||e));
+        btn.disabled = false;
+      }
+    });
+  });
 }
 
 /* ---------------- "ЧИ ДОПОМОГЛА СТАТТЯ" — легкий 👍/👎-фідбек, без прив'язки до імені ---------------- */
@@ -2101,6 +2571,20 @@ document.getElementById('assistantPanelClose').addEventListener('click', closeAs
    Supabase Edge Function "ai-assistant" (секретний ключ лишається на сервері,
    у браузер ніколи не потрапляє). Історія діалогу живе лише в пам'яті вкладки. ---- */
 let AI_CHAT_HISTORY = [];
+let AI_SELECTED_SECTION = null; // raw crumb (напр. "AVIA (Support Office)") або null = усі розділи
+
+/* всі ключі статей обраного розділу (сам розділ + усі вкладені підсторінки) — щоб
+   Edge Function шукала контекст тільки в межах цього розділу, а не по всій базі */
+function collectSectionArticleKeys(crumb){
+  const roots = ADMIN_ARTICLES.filter(a=>!a.parentId && a.crumb===crumb);
+  const keys = [];
+  const walk = a=>{
+    keys.push('article:'+a.id);
+    ADMIN_ARTICLES.filter(c=>c.parentId===a.id).forEach(walk);
+  };
+  roots.forEach(walk);
+  return keys;
+}
 
 function escapeHtml(s){
   const d = document.createElement('div');
@@ -2161,17 +2645,27 @@ async function sendAiChatMessage(ctx){
   const typingBubble = bubble('bot','AI-асистент','<span style="opacity:.6">друкує…</span>', ctx);
   scrollAiInputIntoView();
   try{
-    const { data, error } = await window.sb.functions.invoke('ai-assistant', {
-      body: { message: text, history: historyForCall }
-    });
+    const body = { message: text, history: historyForCall };
+    if(AI_SELECTED_SECTION){
+      body.section = cleanCrumb(AI_SELECTED_SECTION);
+      body.scopeKeys = collectSectionArticleKeys(AI_SELECTED_SECTION);
+    }
+    const { data, error } = await window.sb.functions.invoke('ai-assistant', { body });
     typingBubble.remove();
     if(error || !data || !data.reply){
       bubble('bot','AI-асистент','⚠️ Не вдалося отримати відповідь від AI. Спробуйте ще раз трохи пізніше.', ctx);
     }else{
       const sourcesHtml = Array.isArray(data.sources) && data.sources.length
-        ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:11.5px;color:var(--muted)">📚 Джерела: ${data.sources.map(escapeHtml).join(', ')}</div>`
+        ? `<div class="ai-sources">📚 Джерела: ${data.sources.map(s=>
+            s && s.key
+              ? `<span class="ai-source-link" data-open="${escapeHtml(s.key.replace(/^article:/,''))}">${escapeHtml(s.title)}</span>`
+              : escapeHtml(s && s.title || s)
+          ).join('')}</div>`
         : '';
-      bubble('bot','AI-асистент', formatAiReply(data.reply) + sourcesHtml, ctx);
+      const replyBubble = bubble('bot','AI-асистент', formatAiReply(data.reply) + sourcesHtml, ctx);
+      replyBubble.querySelectorAll('.ai-source-link[data-open]').forEach(el=>{
+        el.addEventListener('click', ()=>render(el.dataset.open));
+      });
       AI_CHAT_HISTORY.push({role:'assistant', content:data.reply});
     }
   }catch(e){
@@ -2186,7 +2680,49 @@ async function sendAiChatMessage(ctx){
 function runAiChat(ctx){
   AI_CHAT_HISTORY = [];
   ctx.box.innerHTML = '';
-  bubble('bot','AI-асистент','Привіт! Запитайте що завгодно про підтримку — спробую допомогти. Відповідає локальна LLM компанії, питання нікуди зовні не йдуть.', ctx);
+  const hint = AI_SELECTED_SECTION
+    ? `Привіт! Питайте про «${cleanCrumb(AI_SELECTED_SECTION)}» — спробую допомогти, спираючись на статті цього розділу.`
+    : 'Привіт! Запитайте що завгодно про підтримку — спробую допомогти.';
+  bubble('bot','AI-асистент', hint + ' Відповідає локальна LLM компанії, питання нікуди зовні не йдуть.', ctx);
+}
+
+/* екран вибору розділу ПЕРЕД чатом — звужує пошук по базі знань саме до цього розділу,
+   інакше AI шукає по всіх ~100 статтях і іноді витягує не ту (owner-фідбек 27.10). */
+function renderAiSectionPicker(area, inPanel){
+  const byRozdil = groupTopLevelArticles();
+  const sections = Object.keys(byRozdil).filter(r=>r);
+  area.innerHTML = `
+    <div class="dept-tag" style="margin-bottom:14px">Якого розділу стосується питання? Так AI знайде точнішу відповідь.</div>
+    <div class="canvas-card-grid" id="aiSectionGrid"></div>
+    <div class="ai-section-skip" id="aiSectionSkip">Запитати без вибору розділу (пошук по всій базі) →</div>
+  `;
+  const grid = area.querySelector('#aiSectionGrid');
+  sections.forEach(rozdil=>{
+    const card = document.createElement('div');
+    card.className = 'canvas-card';
+    card.innerHTML = `<div class="cc-icon">${sectionIcon(rozdil)}</div><div class="cc-title">${cleanCrumb(rozdil)}</div>`;
+    card.addEventListener('click', ()=>startAiChat(area, inPanel, rozdil));
+    grid.appendChild(card);
+  });
+  area.querySelector('#aiSectionSkip').addEventListener('click', ()=>startAiChat(area, inPanel, null));
+}
+
+function startAiChat(area, inPanel, section){
+  AI_SELECTED_SECTION = section;
+  const boxId = inPanel ? 'assistantPanelChat' : 'chatBox';
+  const badgeLabel = section ? `${sectionIcon(section)} ${cleanCrumb(section)}` : '🗂️ Усі розділи';
+  area.innerHTML = `
+    <div class="ai-section-badge" id="aiSectionBadge">${badgeLabel}<button type="button" id="aiSectionChange">змінити розділ</button></div>
+    <div class="chat" id="${boxId}"></div>
+    ${aiChatInputRowHtml(inPanel ? '➤' : undefined)}
+  `;
+  area.querySelector('#aiSectionChange').addEventListener('click', ()=>renderAiSectionPicker(area, inPanel));
+  /* pageScroll:false — спільний bubble() на повній сторінці скролить до
+     document.body.scrollHeight, а той тут включає ще й довгий сайдбар, тож
+     прокручувало далеко за межі самого чату. Скрол на поле вводу робимо самі. */
+  const ctx = { box: document.getElementById(boxId), restartBtn: null, pageScroll:false };
+  wireAiChatInput(ctx);
+  runAiChat(ctx);
 }
 
 function renderAiAssistantPage(){
@@ -2196,27 +2732,18 @@ function renderAiAssistantPage(){
     <div class="back-link" id="aiBack">← Головна</div>
     <div class="crumb">Асистент</div>
     <h1 class="title">🤖 AI-асистент</h1>
-    <div class="dept-tag">Відповідає локальна LLM компанії — питання не йдуть у зовнішні сервіси</div>
-    <div class="chat" id="chatBox"></div>
-    ${aiChatInputRowHtml()}
+    <div id="aiPageArea"></div>
   `;
   document.getElementById('aiBack').addEventListener('click', ()=>render('home'));
-  /* pageScroll:false, бо спільний bubble() на повній сторінці скролить до
-     document.body.scrollHeight — а той тут включає ще й довгий сайдбар, тож
-     прокручувало далеко за межі самого чату. Скрол на поле вводу робимо самі нижче. */
-  const ctx = { box: document.getElementById('chatBox'), restartBtn: null, pageScroll:false };
-  wireAiChatInput(ctx);
-  runAiChat(ctx);
+  renderAiSectionPicker(document.getElementById('aiPageArea'), false);
 }
 
 function runAssistantPanelAi(){
   document.getElementById('assistantPanelTitle').textContent = '🤖 AI-асистент';
   document.getElementById('assistantPanelBack').style.display = 'none';
   const body = document.getElementById('assistantPanelBody');
-  body.innerHTML = `<div class="chat" id="assistantPanelChat"></div>${aiChatInputRowHtml('➤')}`;
-  const ctx = { box: document.getElementById('assistantPanelChat'), restartBtn: null, pageScroll:false };
-  wireAiChatInput(ctx);
-  runAiChat(ctx);
+  body.innerHTML = '<div id="aiPanelArea"></div>';
+  renderAiSectionPicker(document.getElementById('aiPanelArea'), true);
 }
 
 /* ---- builder: where you construct the tree yourself, node by node ---- */
@@ -2587,6 +3114,45 @@ async function seedBuiltinArticles(){
 let NAV_COLLAPSED = new Set();
 let NAV_DEFAULT_COLLAPSE_DONE = false;
 
+/* розділи-акордеон: показуємо список статей лише для ОДНОГО активного розділу (crumb),
+   решта розділів лишаються просто заголовком — інакше AVIA (78 статей) виштовхує
+   BUS/TRAIN/INSURANCE далеко вниз і їх не видно без прокрутки. */
+let EXPANDED_GROUP = null;
+
+/* прибирає "(Support Office)" з відображення — косметично, самі дані (crumb) НЕ чіпаємо,
+   бо на crumb зав'язані ключі sectionLayout:<crumb> в Supabase, і перейменування даних
+   зламало б уже збережене розташування карток на сторінках розділів. */
+function cleanCrumb(crumb){
+  return (crumb || '').replace(/\s*\(support office\)\s*/i, '').trim();
+}
+
+/* верхній crumb-розділ, якому належить стаття — підіймаємось по parentId до кореня */
+function topLevelCrumbOf(article){
+  let a = article;
+  while(a && a.parentId){
+    a = ADMIN_ARTICLES.find(x=>x.id===a.parentId);
+  }
+  return a ? (a.crumb || null) : null;
+}
+
+/* визначає, який розділ має бути розгорнутий для даного view, і виставляє EXPANDED_GROUP.
+   Повертає true, якщо значення змінилось (тоді треба перемалювати нав). Для view, що не
+   належить жодному розділу (home/mine/assistant/тощо) — лишає як було, нічого не форсує. */
+function setExpandedGroupFor(view){
+  let target;
+  if(view === 'home'){
+    target = null;
+  }else if(view.startsWith('section:')){
+    target = decodeURIComponent(view.slice('section:'.length));
+  }else{
+    const article = ADMIN_ARTICLES.find(a=>a.id===view);
+    target = article ? topLevelCrumbOf(article) : undefined;
+  }
+  if(target === undefined || target === EXPANDED_GROUP) return false;
+  EXPANDED_GROUP = target;
+  return true;
+}
+
 /* за замовчуванням ЗГОРТАЄМО всі гілки з дітьми (а не навпаки) — після перенесення зі старої
    бази в деяких розділах (AVIA) під сотню статей у кілька рівнів вкладеності, і якщо все
    розгорнуто одразу, бокова панель перетворюється на нескінченний список, який треба довго
@@ -2614,9 +3180,9 @@ function expandNavAncestorsOf(articleId){
 }
 
 function articleBreadcrumb(article){
-  if(!article.parentId) return article.crumb || '';
+  if(!article.parentId) return cleanCrumb(article.crumb || '');
   const parent = ADMIN_ARTICLES.find(a=>a.id===article.parentId);
-  if(!parent) return article.crumb || '';
+  if(!parent) return cleanCrumb(article.crumb || '');
   const parentCrumb = articleBreadcrumb(parent);
   return (parentCrumb ? parentCrumb + ' · ' : '') + parent.title;
 }
@@ -2644,6 +3210,7 @@ function sectionIcon(crumb){
   if(c.includes('бронюв')) return '📋';
   if(c.includes('відділ')) return '🗂️';
   if(c.includes('документ')) return '📄';
+  if(c.includes('інструмент')) return '🧰';
   return '📁';
 }
 
@@ -2685,13 +3252,29 @@ function renderAdminNav(){
   Object.keys(byRozdil).forEach(rozdil=>{
     const group = document.createElement('div');
     group.className = 'nav-group dyn-admin-group';
-    group.innerHTML = `<div class="nav-heading">${rozdil}</div>`;
-    byRozdil[rozdil].forEach(a=>renderNavNode(a, group, 0));
-    const addSub = document.createElement('div');
-    addSub.className = 'add-subpage-link admin-only';
-    addSub.textContent = '+ Підсторінка';
-    addSub.addEventListener('click', ()=>createDraftArticle(rozdil, null, null));
-    group.appendChild(addSub);
+    const expanded = EXPANDED_GROUP === rozdil;
+    const heading = document.createElement('div');
+    heading.className = 'nav-heading' + (expanded ? ' expanded' : '');
+    const soleArticle = byRozdil[rozdil].length===1 && !countDescendants(byRozdil[rozdil][0]) ? byRozdil[rozdil][0] : null;
+    heading.innerHTML = soleArticle
+      ? `<span>${cleanCrumb(rozdil)}</span>`
+      : `<span class="nav-heading-arrow">${expanded ? '▾' : '▸'}</span><span>${cleanCrumb(rozdil)}</span>`;
+    heading.addEventListener('click', ()=>{
+      /* розділ рівно з 1 статті (без власних підсторінок) — клік одразу відкриває її,
+         нічого розгортати нема сенсу (те саме звуження, що й для картки на головній) */
+      if(soleArticle){ render(soleArticle.id); return; }
+      EXPANDED_GROUP = expanded ? null : rozdil;
+      renderAdminNav();
+    });
+    group.appendChild(heading);
+    if(expanded){
+      byRozdil[rozdil].forEach(a=>renderNavNode(a, group, 0));
+      const addSub = document.createElement('div');
+      addSub.className = 'add-subpage-link admin-only';
+      addSub.textContent = '+ Підсторінка';
+      addSub.addEventListener('click', ()=>createDraftArticle(rozdil, null, null));
+      group.appendChild(addSub);
+    }
     navMain.insertBefore(group, anchor);
   });
 }
@@ -2712,10 +3295,14 @@ async function renderHomePage(){
   main.innerHTML = `
     <div class="home-hero">
       <h1 class="home-title">Чим можу допомогти?</h1>
-      <div class="dept-tag">Пошук або розділ нижче — усе, що потрібно під час дзвінка</div>
-      <input type="text" id="homeSearchInput" class="home-search" placeholder="Пошук по темах, відділах, ключових словах…">
+      <input type="search" id="homeSearchInput" class="home-search" autocomplete="off" name="kb-search-home" placeholder="Пошук по темах, відділах, ключових словах…">
+      <a class="btn home-chat-link" href="https://chat.google.com/u/1/app/chat/AAAAv8O_Trw" target="_blank" rel="noopener">💬 Чат інфо</a>
     </div>
     <div class="canvas-card-grid home-grid" id="homeSectionGrid"></div>
+    <div class="dino-game-wrap">
+      <div class="dino-game-hint">🎮 Нудно чекати дзвінка? Клікни і тисни ПРОБІЛ, щоб стрибати</div>
+      <canvas id="agentDinoCanvas" width="480" height="150" tabindex="0"></canvas>
+    </div>
   `;
   const grid = document.getElementById('homeSectionGrid');
   const byRozdil = groupTopLevelArticles();
@@ -2728,8 +3315,12 @@ async function renderHomePage(){
     const total = articles.reduce((sum,a)=>sum + 1 + countDescendants(a), 0);
     const card = document.createElement('div');
     card.className = 'canvas-card home-card';
-    card.innerHTML = `<div class="cc-icon">${sectionIcon(rozdil)}</div><div class="cc-title">${rozdil}</div><div class="cc-meta">${total} ${total===1?'стаття':'статей'}</div>`;
-    card.addEventListener('click', ()=>render('section:'+encodeURIComponent(rozdil)));
+    card.innerHTML = `<div class="cc-icon">${sectionIcon(rozdil)}</div><div class="cc-title">${cleanCrumb(rozdil)}</div><div class="cc-meta">${total} ${total===1?'стаття':'статей'}</div>`;
+    /* якщо в розділі рівно 1 стаття (сама є "обгорткою" розділу, без підсторінок) —
+       ведемо одразу в неї, а не на проміжний список з одним пунктом (owner-фідбек:
+       "навіщо я двічі клікаю в Робочі інструменти") */
+    const soleArticle = articles.length===1 && !countDescendants(articles[0]) ? articles[0] : null;
+    card.addEventListener('click', ()=>render(soleArticle ? soleArticle.id : 'section:'+encodeURIComponent(rozdil)));
     grid.appendChild(card);
   });
   const homeSearch = document.getElementById('homeSearchInput');
@@ -2740,6 +3331,139 @@ async function renderHomePage(){
     realSearch.dispatchEvent(new Event('input', {bubbles:true}));
   });
   homeSearch.addEventListener('focus', ()=>document.body.classList.remove('nav-collapsed'));
+  dinoInit();
+}
+
+/* ---- міні-гра на головній: той самий "динозаврик" без інтернету з Chrome, тільки
+   пробіл і проста піксельна графіка. Програш → дівчинка з підписом (owner-фідбек 27.10).
+   Стан живе лише в пам'яті вкладки (нічого нікуди не зберігається) — одна гра на сесію,
+   перемальовується наново щоразу при заході на головну (новий canvas-елемент). ---- */
+const DINO = { canvas:null, ctx:null, running:false, started:false, gameOver:false, raf:null };
+
+function dinoResetState(){
+  DINO.player = { x:24, y:0, w:18, h:22, vy:0, jumping:false };
+  DINO.obstacles = [];
+  DINO.score = 0;
+  DINO.speed = 4;
+  DINO.frame = 0;
+  DINO.gameOver = false;
+}
+
+function dinoInit(){
+  const canvas = document.getElementById('agentDinoCanvas');
+  if(!canvas) return;
+  DINO.canvas = canvas;
+  DINO.ctx = canvas.getContext('2d');
+  DINO.groundY = canvas.height - 24;
+  DINO.started = false;
+  dinoResetState();
+  DINO.player.y = DINO.groundY - DINO.player.h;
+  dinoDrawIdle();
+  canvas.addEventListener('keydown', e=>{
+    if(e.code === 'Space'){ e.preventDefault(); dinoJump(); }
+  });
+  canvas.addEventListener('click', ()=>{ canvas.focus(); dinoJump(); });
+}
+
+function dinoJump(){
+  if(DINO.gameOver){ dinoResetState(); DINO.player.y = DINO.groundY - DINO.player.h; DINO.started = true; dinoLoop(); return; }
+  if(!DINO.started){ DINO.started = true; dinoLoop(); }
+  if(!DINO.player.jumping){ DINO.player.vy = -10; DINO.player.jumping = true; }
+}
+
+function dinoLoop(){
+  if(!DINO.canvas || !document.body.contains(DINO.canvas)) return; // пішли з головної — гра просто зупиняється
+  DINO.frame++;
+
+  DINO.player.vy += 0.6;
+  DINO.player.y += DINO.player.vy;
+  if(DINO.player.y >= DINO.groundY - DINO.player.h){
+    DINO.player.y = DINO.groundY - DINO.player.h;
+    DINO.player.vy = 0;
+    DINO.player.jumping = false;
+  }
+
+  if(DINO.frame % Math.max(42, 75 - Math.floor(DINO.score/4)) === 0){
+    const h = 16 + Math.floor(Math.random()*14);
+    DINO.obstacles.push({x: DINO.canvas.width, y: DINO.groundY - h, w: 12, h});
+  }
+  DINO.obstacles.forEach(o=> o.x -= DINO.speed);
+  DINO.obstacles = DINO.obstacles.filter(o=> o.x + o.w > -2);
+
+  for(const o of DINO.obstacles){
+    if(DINO.player.x < o.x+o.w && DINO.player.x+DINO.player.w > o.x &&
+       DINO.player.y < o.y+o.h && DINO.player.y+DINO.player.h > o.y){
+      DINO.gameOver = true;
+      dinoDrawGameOver();
+      return;
+    }
+  }
+
+  DINO.score += 0.1;
+  DINO.speed = Math.min(12, 4 + DINO.score/50);
+
+  dinoDraw();
+  DINO.raf = requestAnimationFrame(dinoLoop);
+}
+
+function dinoDraw(){
+  const ctx = DINO.ctx, c = DINO.canvas;
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#0d0b16';
+  ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle = 'rgba(255,255,255,.25)';
+  ctx.fillRect(0, DINO.groundY, c.width, 2);
+  /* гравець — проста піксельна людина-агент */
+  ctx.fillStyle = '#7CA3DE';
+  ctx.fillRect(DINO.player.x, DINO.player.y+6, DINO.player.w, DINO.player.h-6);
+  ctx.fillStyle = '#FFDCB2';
+  ctx.fillRect(DINO.player.x+3, DINO.player.y, 12, 8);
+  ctx.fillStyle = '#6FC2B8';
+  DINO.obstacles.forEach(o=> ctx.fillRect(o.x, o.y, o.w, o.h));
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('ОЧКИ: '+Math.floor(DINO.score), c.width-10, 16);
+  ctx.textAlign = 'left';
+}
+
+function dinoDrawIdle(){
+  const ctx = DINO.ctx, c = DINO.canvas;
+  dinoDraw();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ПРОБІЛ, щоб почати', c.width/2, c.height/2);
+  ctx.textAlign = 'left';
+}
+
+function dinoDrawGameOver(){
+  dinoDraw();
+  const ctx = DINO.ctx, c = DINO.canvas;
+  ctx.fillStyle = 'rgba(10,8,18,.88)';
+  ctx.fillRect(0,0,c.width,c.height);
+  /* дуже проста піксельна дівчинка в зеленій кепці — блоками, без спрайтів */
+  const gx = c.width/2 - 11, gy = c.height/2 - 40;
+  ctx.fillStyle = '#2e6b3e';
+  ctx.fillRect(gx-4, gy+2, 30, 8);
+  ctx.fillStyle = '#3f9d57';
+  ctx.fillRect(gx+2, gy-6, 18, 10);
+  ctx.fillStyle = '#FFDCB2';
+  ctx.fillRect(gx+1, gy+10, 20, 15);
+  ctx.fillStyle = '#D99FA8';
+  ctx.fillRect(gx-2, gy+25, 26, 24);
+  ctx.fillStyle = '#FFDCB2';
+  ctx.fillRect(gx-7, gy+27, 6, 12);
+  ctx.fillRect(gx+21, gy+27, 6, 12);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Настя рада, що ти побавився —', c.width/2, c.height - 30);
+  ctx.fillText('тепер йди вчись 😊', c.width/2, c.height - 16);
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#8a84a0';
+  ctx.fillText('ПРОБІЛ — спробувати ще раз', c.width/2, c.height - 4);
+  ctx.textAlign = 'left';
 }
 
 /* ---- сторінка одного розділу з головної: картки лише ВЕРХНЬОГО рівня цього розділу
@@ -2795,7 +3519,7 @@ async function renderSectionPage(view, editing, overrideGroups){
   main.innerHTML = `
     <div class="back-link" id="sectionBack">← Головна</div>
     <div class="crumb">Головна</div>
-    <h1 class="title">${sectionIcon(rozdil)} ${rozdil}
+    <h1 class="title">${sectionIcon(rozdil)} ${cleanCrumb(rozdil)}
       ${!editing ? '<button class="edit-toggle-btn admin-only" id="sectionLayoutEditBtn">✎ Редагувати розташування</button>' : ''}
     </h1>
     ${editing ? `<div class="dept-tag">Вкажіть номер групи для кожної картки (картки з однаковим номером підуть в один блок) і натисніть "Зберегти"</div>` : ''}
@@ -3554,6 +4278,7 @@ function attachEditorHandlers(article){
        статтю, зберігаємо те, що в ній було досі, окремим документом під префіксом "articleprev:"
        (НЕ "article:...:prev" — той префікс збігається з "article:", який сканує
        loadAdminArticles(), і резервна копія підхоплювалась як окрема "стаття" без id) */
+    const wasNew = article.isNew;
     if(!article.isNew){
       try{
         await window.storage.set('articleprev:'+article.id, JSON.stringify({
@@ -3569,6 +4294,12 @@ function attachEditorHandlers(article){
     article.quiz = QUIZ_DRAFT.filter(q => q.q.trim() && q.options.every(o => o.trim()));
     article.related = RELATED_DRAFT;
     try{ await window.storage.set('article:'+article.id, JSON.stringify(article), true); }catch(e){}
+    /* сповіщення — лише для СПРАВЖНЬОГО першого публікування нової сторінки, не для
+       кожного редагування (owner-фідбек 27.10: "якщо додалась нова стаття в розділ") */
+    if(wasNew){
+      await createNotification(article);
+      refreshNotifBadge();
+    }
     clearDraft();
     renderAdminNav();
     const toast = document.getElementById('toast');
@@ -3974,8 +4705,13 @@ function mountInlineScheme(wrap, initialBlocks){
   }
 
   blocks.forEach(b=>{ if(b.type!=='arrow') mountBlock(b); });
-  redrawArrows();
+  /* growBoardToFit() ПЕРЕД redrawArrows(): інакше при завантаженні вже збереженої схеми
+     (кілька блоків одразу) SVG отримує viewBox за ще не розтягнутою під блоки висотою
+     дошки — і стрілки малюються зміщеними, поки хтось не перетягне блок (що й викликає
+     повторний redrawArrows() вже з правильними розмірами). При ручному додаванні блоків
+     по одному цього не видно, бо growBoardToFit() встигає відпрацювати після кожного. */
   growBoardToFit();
+  redrawArrows();
 
   /* невеликий каскад зсуву для нових блоків, щоб вони не сипались один на одного в кутку */
   let addCount = 0;
@@ -4144,8 +4880,13 @@ document.getElementById('gateAgentBtn').addEventListener('click', async ()=>{
      підхоплюється/створюється тут же — просто після гейта тепер завжди відкривається
      головна (пошук + картки розділів), а не "Моє". */
   await getAgentProfile();
+  /* деякі автозаповнювачі браузера підставляють сюди збережену пошту, незважаючи на
+     autocomplete="off" — явно чистимо, щоб у шапці не висів сторонній текст замість
+     порожнього пошуку */
+  document.getElementById('searchInput').value = '';
   closeGate();
   render('home');
+  refreshNotifBadge();
 });
 document.getElementById('gateAdminBtn').addEventListener('click', ()=>{
   if(isAdminUnlocked()){ setRole(true); closeGate(); return; }
@@ -4183,6 +4924,27 @@ document.getElementById('btnLight').addEventListener('click', ()=>{
   document.getElementById('btnDark').classList.remove('active');
 });
 
+document.getElementById('notifBellBtn').addEventListener('click', async e=>{
+  e.stopPropagation();
+  const dd = document.getElementById('notifDropdown');
+  const opening = !dd.classList.contains('open');
+  dd.classList.toggle('open');
+  if(opening) await renderNotifDropdown();
+});
+document.addEventListener('click', e=>{
+  const wrap = document.getElementById('notifWrap');
+  if(wrap && !wrap.contains(e.target)) document.getElementById('notifDropdown').classList.remove('open');
+});
+document.getElementById('notifMarkAllBtn').addEventListener('click', async e=>{
+  e.stopPropagation();
+  const profile = await getAgentProfile();
+  if(!profile) return;
+  const doc = await loadAgentDoc(profile.email);
+  doc.readNotifications = NOTIFICATIONS.map(n=>n.id);
+  await saveAgentDoc(doc);
+  renderNotifDropdown();
+});
+
 /* поки триває пошук — тимчасово розгортаємо всі згорнуті підсторінки,
    інакше збіг усередині згорнутої гілки просто не має свого DOM-рядка й "губиться" */
 let NAV_COLLAPSED_BEFORE_SEARCH = null;
@@ -4200,7 +4962,14 @@ document.getElementById('searchInput').addEventListener('input', (e)=>{
     return; /* renderAdminNav уже перемалював список без фільтра пошуку */
   }
 
+  /* статичні службові пункти (Головна/AI-асистент/Тести/Моє і адмінські) — це не контент
+     бази знань, а навігаційні якорі, тож пошук по статтях їх ніколи не ховає (власник-фідбек
+     27.10: через якийсь сторонній автозаповнювач поле пошуку в шапці одного разу отримало
+     лишній текст, і ці пункти зникли — а ховати їх через збіг/незбіг із пошуковим запитом
+     не мало сенсу в принципі, навіть при звичайному ручному пошуку) */
+  const STATIC_NAV_VIEWS = new Set(['home','assistant','tests','mine','suggestions','quizResults','staleArticles','users']);
   document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
+    if(STATIC_NAV_VIEWS.has(item.dataset.view)) return;
     const existingSnippet = item.nextElementSibling && item.nextElementSibling.classList.contains('nav-search-snippet')
       ? item.nextElementSibling : null;
     if(!q){
@@ -4233,7 +5002,8 @@ loadAdminArticles()
   .then(()=>{ renderAdminNav(); })
   .then(()=>loadScenarioList())
   .then(()=>seedBaggageScenario())
-  .then(()=>render('home'));
+  .then(()=>render('home'))
+  .then(()=>refreshNotifBadge());
 </script>
 </body>
 </html>
