@@ -1066,7 +1066,7 @@
     <div id="gatePwForm" style="display:none;flex-direction:column;gap:12px">
       <h3 style="margin-bottom:4px">Пароль адміна</h3>
       <div class="hint" style="margin-bottom:6px">Потрібен, щоб редагувати контент</div>
-      <input type="password" id="gatePwInput" placeholder="Пароль" style="text-align:center">
+      <input type="password" id="gatePwInput" placeholder="Пароль" autocomplete="new-password" style="text-align:center">
       <div id="gatePwError" style="display:none;color:var(--red);font-size:12.5px">Невірний пароль</div>
       <div class="modal-actions" style="justify-content:center">
         <button class="btn" id="gatePwBack">← Назад</button>
@@ -3118,6 +3118,10 @@ let NAV_DEFAULT_COLLAPSE_DONE = false;
    решта розділів лишаються просто заголовком — інакше AVIA (78 статей) виштовхує
    BUS/TRAIN/INSURANCE далеко вниз і їх не видно без прокрутки. */
 let EXPANDED_GROUP = null;
+/* під час активного пошуку форсуємо розгортання ВСІХ розділів-акордеонів одразу
+   (не лише EXPANDED_GROUP) — інакше DOM-рядків для статей з інших розділів просто
+   не існує, і фільтр пошуку (нижче) не може їх ні знайти, ні показати */
+let SEARCH_FORCE_EXPAND_ALL = false;
 
 /* прибирає "(Support Office)" з відображення — косметично, самі дані (crumb) НЕ чіпаємо,
    бо на crumb зав'язані ключі sectionLayout:<crumb> в Supabase, і перейменування даних
@@ -3252,7 +3256,7 @@ function renderAdminNav(){
   Object.keys(byRozdil).forEach(rozdil=>{
     const group = document.createElement('div');
     group.className = 'nav-group dyn-admin-group';
-    const expanded = EXPANDED_GROUP === rozdil;
+    const expanded = SEARCH_FORCE_EXPAND_ALL || EXPANDED_GROUP === rozdil;
     const heading = document.createElement('div');
     heading.className = 'nav-heading' + (expanded ? ' expanded' : '');
     const soleArticle = byRozdil[rozdil].length===1 && !countDescendants(byRozdil[rozdil][0]) ? byRozdil[rozdil][0] : null;
@@ -4945,19 +4949,32 @@ document.getElementById('notifMarkAllBtn').addEventListener('click', async e=>{
   renderNotifDropdown();
 });
 
-/* поки триває пошук — тимчасово розгортаємо всі згорнуті підсторінки,
-   інакше збіг усередині згорнутої гілки просто не має свого DOM-рядка й "губиться" */
+/* поки триває пошук — тимчасово розгортаємо всі згорнуті підсторінки (NAV_COLLAPSED,
+   вкладеність усередині розділу) І всі розділи-акордеони одразу (EXPANDED_GROUP —
+   інакше, звичайно, показується лише ОДИН розділ), інакше збіг у не розгорнутій
+   гілці/розділі просто не має свого DOM-рядка й "губиться" (саме так зникав пошук
+   по статтях поза поточним відкритим розділом — owner-репорт 28.10) */
 let NAV_COLLAPSED_BEFORE_SEARCH = null;
+let EXPANDED_GROUP_BEFORE_SEARCH = null;
 document.getElementById('searchInput').addEventListener('input', (e)=>{
   const q = e.target.value.toLowerCase().trim();
 
-  if(q && NAV_COLLAPSED.size){
-    if(NAV_COLLAPSED_BEFORE_SEARCH===null) NAV_COLLAPSED_BEFORE_SEARCH = new Set(NAV_COLLAPSED);
-    NAV_COLLAPSED.clear();
+  if(q && !SEARCH_FORCE_EXPAND_ALL){
+    EXPANDED_GROUP_BEFORE_SEARCH = EXPANDED_GROUP;
+    SEARCH_FORCE_EXPAND_ALL = true;
+    if(NAV_COLLAPSED.size){
+      NAV_COLLAPSED_BEFORE_SEARCH = new Set(NAV_COLLAPSED);
+      NAV_COLLAPSED.clear();
+    }
     renderAdminNav();
-  } else if(!q && NAV_COLLAPSED_BEFORE_SEARCH!==null){
-    NAV_COLLAPSED = NAV_COLLAPSED_BEFORE_SEARCH;
-    NAV_COLLAPSED_BEFORE_SEARCH = null;
+  } else if(!q && SEARCH_FORCE_EXPAND_ALL){
+    SEARCH_FORCE_EXPAND_ALL = false;
+    EXPANDED_GROUP = EXPANDED_GROUP_BEFORE_SEARCH;
+    EXPANDED_GROUP_BEFORE_SEARCH = null;
+    if(NAV_COLLAPSED_BEFORE_SEARCH!==null){
+      NAV_COLLAPSED = NAV_COLLAPSED_BEFORE_SEARCH;
+      NAV_COLLAPSED_BEFORE_SEARCH = null;
+    }
     renderAdminNav();
     return; /* renderAdminNav уже перемалював список без фільтра пошуку */
   }
