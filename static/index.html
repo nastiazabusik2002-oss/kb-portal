@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTN Chat Desk</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v=8">
+<script>
+  // Тему ставимо ще до малювання сторінки, щоб не було «спалаху» світлої
+  try { var p = JSON.parse(localStorage.getItem('desk_prefs_v1') || '{}');
+        document.documentElement.dataset.theme = p.theme === 'dark' ? 'dark' : 'light'; } catch (e) {}
+</script>
+</head>
+<body>
+
+<!-- ВХІД -->
+<div id="login" class="hidden">
+  <form class="login-card" id="login-form">
+    <div class="logo">
+      <div class="logo-mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div><div class="logo-title">TTN Chat Desk</div><div class="logo-sub">Чати сайтів · працює на Zammad</div></div>
+    </div>
+    <div class="field"><label for="lg">Логін або e-mail Zammad</label><input id="lg" autocomplete="username" required></div>
+    <div class="field"><label for="pw">Пароль Zammad</label><input id="pw" type="password" autocomplete="current-password" required></div>
+    <div class="err" id="login-err"></div>
+    <button class="btn-primary" id="login-btn" type="submit">Увійти</button>
+    <p class="login-note">Ті самі логін і пароль, що й у Zammad</p>
+  </form>
+</div>
+
+<!-- РОБОЧЕ МІСЦЕ -->
+<div id="desk" class="hidden">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="logo-title">TTN Chat Desk</div>
+    </div>
+    <span class="queue-pill"><i></i><span id="q-count">0</span> у черзі</span>
+    <span class="conn-err" id="conn-err"></span>
+    <div class="grow"></div>
+    <div class="top-ctrl">
+      <button class="btn-ghost icon-btn" data-act="stats-toggle" aria-label="Моя статистика" title="Моя статистика">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>
+      <button class="btn-ghost icon-btn" id="sound-btn" data-act="sound-toggle"></button>
+      <button class="btn-ghost icon-btn" id="theme-btn" data-act="theme-toggle"></button>
+      <button class="btn-ghost icon-btn" data-act="prefs-toggle" aria-label="Налаштування" title="Налаштування звуку і теми">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <div class="prefs hidden" id="prefs"></div>
+      <div class="prefs hidden" id="stats"></div>
+    </div>
+    <div class="me">
+      <span class="av" id="me-av" style="width:36px;height:36px;background:#DCFAE6;color:#067647;font-size:13px"></span>
+      <div><div class="me-name" id="me-name"></div><div class="me-sub">● онлайн</div></div>
+      <button class="btn-ghost icon-btn" id="logout" aria-label="Вийти" title="Вийти"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="card col-list">
+      <div class="pad">
+        <form class="search" id="search-form"><label for="search-in" class="sr">Пошук за booking</label>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search-in" placeholder="Пошук за booking…" autocomplete="off"></form>
+        <div class="seg" id="tabs"></div><div class="agents" id="agents"></div></div>
+      <div id="list" class="scroll"></div>
+    </div>
+    <div class="card col-main" id="main"></div>
+    <div class="card col-side" id="side"></div>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
+<script src="/static/app.js?v=11"></script>
+</body>
+</html>
